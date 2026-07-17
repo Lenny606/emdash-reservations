@@ -1,0 +1,21 @@
+{
+	"name": "@emdash-reservations/plugin-reservations",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./sandbox": "./src/sandbox-entry.ts",
+		"./components": "./src/components/index.ts"
+	},
+	"dependencies": {
+		"@emdash-cms/blocks": "0.28.1"
+	},
+	"peerDependencies": {
+		"astro": "^7.0.0",
+		"emdash": "^0.28.1"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1"
+	}
+}

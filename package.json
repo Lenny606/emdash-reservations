@@ -17,6 +17,7 @@
   "dependencies": {
     "@astrojs/node": "^11.0.0",
     "@astrojs/react": "^6.0.0",
+    "@emdash-reservations/plugin-reservations": "workspace:*",
     "astro": "^7.0.0",
     "better-sqlite3": "^12.8.0",
     "emdash": "^0.28.1",

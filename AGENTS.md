@@ -58,6 +58,11 @@ There is intentionally no `theme.css`, no custom font configuration, no styled l
 | Page        | `/[slug]`          | Static page content (e.g. `/about`)            |
 | Category    | `/category/[slug]` | Posts filtered by category                     |
 | Tag         | `/tag/[slug]`      | Posts filtered by tag                          |
+| Reservations | `/reservations`   | Weekly booking calendar (`ReservationCalendar` from the `reservations` plugin) |
+
+## Reservations plugin
+
+`packages/emdash-plugin-reservations` is a local workspace plugin (`@emdash-reservations/plugin-reservations`, standard format, registered in `astro.config.mjs`'s `plugins: []`). It adds a public booking calendar (`/reservations`) backed by plugin storage (`reservations`, `reservations_history` collections) and KV settings, plus a Block Kit admin page at `/_emdash/admin/plugins/reservations/reservations` for configuring hours/colors and confirming or cancelling bookings. See `packages/emdash-plugin-reservations/SPEC.md`, `PLAN.md`, and `README.md` for the design, implementation notes (including emdash-version-specific API findings), and usage.
 
 ## Schema
 

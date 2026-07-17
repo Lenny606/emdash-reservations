@@ -6,7 +6,7 @@ Rezervační plugin pro EmDash CMS. Na veřejném webu zobrazí týdenní kalend
 
 | Rozhodnutí | Volba | Zdůvodnění |
 | --- | --- | --- |
-| Formát pluginu | **Standard** (`format: "standard"`, descriptor + `sandbox-entry.ts`) | Nepotřebujeme React admin ani PT bloky; Block Kit + `settingsSchema` pokryjí administraci. Standard formát nechává otevřenou cestu k marketplace. |
+| Formát pluginu | **Standard** (`format: "standard"`, descriptor + `sandbox-entry.ts`) | Nepotřebujeme React admin ani PT bloky; Block Kit pokryje administraci (viz Fáze 0 v PLAN.md — `settingsSchema` je jen native, standard formát řeší nastavení přes KV + Block Kit formulář). Standard formát nechává otevřenou cestu k marketplace. `sandbox-entry.ts` exportuje holý `{ hooks?, routes? }` (`satisfies SandboxedPlugin` z `"emdash/plugin"`), ne `definePlugin()`. |
 | Registrace | `plugins: []` v `astro.config.mjs` (trusted, in-process) | První strana, lokální kód; Node adapter (sandbox je jen Cloudflare). |
 | Umístění | Lokální workspace balíček `packages/emdash-plugin-reservations` (`@emdash-reservations/plugin-reservations`) | Čisté oddělení od webu, `entrypoint` může mířit na package export `./sandbox`. Vyžaduje přidat `packages:` do `pnpm-workspace.yaml`. |
 | Kalendář na webu | Astro komponenta `ReservationCalendar.astro` exportovaná z balíčku (`./components`) + vanilla TS klientský skript | Trusted lokální balíček může dodat `.astro` zdroj přímo (Astro je konzumuje bez buildu). Web ji naimportuje na stránce `/rezervace`. Žádný React na klientu. |
@@ -39,7 +39,9 @@ packages/emdash-plugin-reservations/
 ├── package.json                  # exports: ".", "./sandbox", "./components"
 ├── tsconfig.json
 ├── SPEC.md                       # tento dokument
-└── PLAN.md                       # implementační plán
+├── PLAN.md                       # implementační plán
+├── NPM_SPEC.md                   # specifikace distribuce jako npm balíček
+└── NPM_PLAN.md                   # implementační plán npm distribuce (realizuje NPM_SPEC.md)
 ```
 
 ## 2. Datový model
@@ -68,7 +70,7 @@ interface Reservation {
 
 | Kolekce | id | Indexy | Účel |
 | --- | --- | --- | --- |
-| `reservations` | **`slotKey`** | `date`, `status`, `email`, `createdAt`, `["date", "startTime"]` | Aktivní rezervace (pending/confirmed). `id = slotKey` ⇒ jeden slot = max jedna aktivní rezervace (atomická unikátnost bez zámků). |
+| `reservations` | **`slotKey`** | `date`, `status`, `email`, `createdAt` | Aktivní rezervace (pending/confirmed). `id = slotKey` ⇒ jeden slot = max jedna aktivní rezervace (atomická unikátnost bez zámků). Composite index `["date","startTime"]` není v této verzi emdash podporovaný (`PluginDescriptor` bere jen ploché řetězce) — řazení podle `startTime` v rámci dne se dělá in-memory po načtení přes `date` index. |
 | `reservations_history` | ULID | `date`, `status`, `email`, `createdAt` | Zrušené/archivované rezervace. Při zrušení se záznam přesune sem (delete z `reservations` + put sem), čímž se slot uvolní. |
 
 Konflikt při souběžném zápisu: `exists(slotKey)` check před `put` + fakt, že id je slotKey, minimalizuje okno; druhý zápis by přepsal první, proto pořadí *check → put → re-read a porovnání `createdAt`/nonce* (verifikační krok) — detail v PLAN fáze 3.
@@ -97,6 +99,8 @@ Base: `/_emdash/api/plugins/reservations/<route>`
 
 Všechny vstupy validuje Zod (`input:` na routě) + druhá vrstva sanitizace/business validace v `validation.ts`.
 
+Standard formát volá handlery dvouargumentově `(routeCtx, ctx)`: `routeCtx.request` je přenositelný `{ url, method, headers }` záznam (ne skutečný `Request`), `routeCtx.requestMeta` nese už normalizované `{ ip, userAgent, referer, geo }`.
+
 ### Pipeline `public/reserve`
 
 1. `enabled` check (KV `settings:enabled`) → jinak `disabled`.
@@ -115,7 +119,7 @@ Všechny vstupy validuje Zod (`input:` na routě) + druhá vrstva sanitizace/bus
 | **CSRF** | Stateless podepsaný token: `base64(payload).HMAC-SHA256(payload, secret)`; payload = `{ iat, exp (15 min), nonce }`. Secret se vygeneruje v `plugin:install` (Web Crypto) a uloží do KV `state:csrfSecret`. Klient si token vyžádá z `public/csrf` a pošle v těle `reserve`. Web Crypto only — žádné Node builtins (sandbox kompatibilita). |
 | **Honeypot** | Skryté pole `website` (CSS `position:absolute; left:-9999px`, `tabindex="-1"`, `autocomplete="off"`). Vyplněné ⇒ tiché zahození. |
 | **Captcha** | **Samostatný plugin** (vlastní nastavení, provider, klíče) — není součástí rezervačního pluginu. Rezervační plugin definuje pouze integrační kontrakt: (a) formulář v kalendáři obsahuje DOM slot `<div data-rsv-captcha>` pro widget captcha pluginu, (b) `CreateReservationDto.captchaToken` přenese neprůhledný token, (c) server-side krok 5 pipeline deleguje ověření na verify routu captcha pluginu (same-origin volání). Bez nainstalovaného/nakonfigurovaného captcha pluginu se krok přeskakuje — bot ochranu drží honeypot + rate limit. |
-| **Rate limiting** | KV čítače per IP hash (SHA-256 IP + secret, žádné ukládání syrových IP), minutové a hodinové bucket okno. |
+| **Rate limiting** | KV čítače per IP hash (SHA-256 IP + secret, žádné ukládání syrových IP), minutové a hodinové bucket okno. IP se čte z už normalizovaného `routeCtx.requestMeta.ip` (standard formát), ne z hlaviček ručně. |
 
 ## 5. Klientský kalendář
 
@@ -133,7 +137,9 @@ Všechny vstupy validuje Zod (`input:` na routě) + druhá vrstva sanitizace/bus
 
 ## 6. Administrace
 
-### Nastavení (`admin.settingsSchema` → KV `settings:*`)
+### Nastavení (Block Kit formulář v `admin` routě → KV `settings:*`)
+
+`admin.settingsSchema` je jen pro native formát (viz Fáze 0 v PLAN.md) — standard formát nemá auto-generovaný settings formulář. Nastavení proto renderujeme jako `form` blok v Block Kit `admin` routě (stejná stránka jako přehled/tabulka, nad ní), `form_submit` handler zapisuje do KV `settings:*`.
 
 | Klíč | Typ | Default | Popis |
 | --- | --- | --- | --- |
@@ -176,7 +182,7 @@ E-mailový transport plugin zatím neexistuje. Připravíme čistý šev:
 capabilities: ["email:send"],
 ```
 
-Pozn.: delegované ověření captchy je same-origin volání verify routy jiného pluginu (v trusted režimu běžný `fetch` na vlastní origin odvozený z `ctx.request.url`). Externí hosty plugin nevolá — `network:request` ani `allowedHosts` nejsou potřeba; externí komunikaci (Turnstile apod.) řeší captcha plugin sám.
+Pozn.: delegované ověření captchy je same-origin volání verify routy jiného pluginu — URL se sestaví přes `ctx.url("/_emdash/api/plugins/<captchaPluginId>/verify")` (vždy dostupné na `PluginContext`, viz Fáze 0), zavolá se běžným globálním `fetch` (trusted/in-process režim). Externí hosty plugin nevolá — `network:request` ani `allowedHosts` nejsou potřeba; externí komunikaci (Turnstile apod.) řeší captcha plugin sám.
 
 Hooks: `plugin:install` (CSRF secret, persist defaults), `plugin:activate`/`plugin:deactivate` (log; runtime vypínání řídí `settings:enabled`), `plugin:uninstall` (smazat data jen při `event.deleteData`).
 

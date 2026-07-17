@@ -1,0 +1,11 @@
+---
+// No CMS content is queried server-side here -- the calendar loads availability
+// client-side from the reservations plugin's own API, so there's no cacheHint to set.
+import { ReservationCalendar } from "@emdash-reservations/plugin-reservations/components";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Reservations" description="Book an available slot in a few clicks.">
+	<h1>Reservations</h1>
+	<ReservationCalendar />
+</Base>

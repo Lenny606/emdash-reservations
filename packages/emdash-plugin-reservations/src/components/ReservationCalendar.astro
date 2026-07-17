@@ -1,0 +1,192 @@
+---
+// Server-rendered wrapper: the grid itself is built client-side by client/calendar.ts,
+// since availability needs a live fetch and colors come from the plugin's own settings.
+---
+
+<div class="rsv-calendar" data-rsv-root>
+	<noscript>
+		<p class="rsv-message rsv-message--error">
+			The reservation calendar requires JavaScript to be enabled in your browser.
+		</p>
+	</noscript>
+	<div class="rsv-app" data-rsv-app hidden></div>
+</div>
+
+<script>
+	import { initReservationCalendar } from "../client/calendar";
+
+	const root = document.querySelector<HTMLElement>("[data-rsv-root]");
+	if (root) initReservationCalendar(root);
+</script>
+
+<style is:global>
+	.rsv-calendar {
+		--rsv-free: #22c55e;
+		--rsv-reserved: #ef4444;
+		--rsv-pending: #f59e0b;
+		--rsv-closed: #e5e7eb;
+		font-family: system-ui, sans-serif;
+		max-width: 56rem;
+	}
+
+	.rsv-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.rsv-week-label {
+		font-weight: 600;
+	}
+
+	.rsv-button {
+		border: 1px solid #d1d5db;
+		background: #fff;
+		border-radius: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		cursor: pointer;
+		font-size: 0.9rem;
+	}
+
+	.rsv-button:hover {
+		background: #f3f4f6;
+	}
+
+	.rsv-button--primary {
+		background: #111827;
+		color: #fff;
+		border-color: #111827;
+	}
+
+	.rsv-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.rsv-grid {
+		display: grid;
+		grid-template-columns: 4rem repeat(7, 1fr);
+		gap: 2px;
+		background: #e5e7eb;
+		border: 1px solid #e5e7eb;
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+
+	.rsv-cell {
+		background: #fff;
+		padding: 0.4rem;
+		font-size: 0.8rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 2rem;
+	}
+
+	.rsv-cell--corner {
+		background: #f9fafb;
+	}
+
+	.rsv-day-label {
+		flex-direction: column;
+		background: #f9fafb;
+		font-weight: 600;
+	}
+
+	.rsv-day-date {
+		font-weight: 400;
+		color: #6b7280;
+		font-size: 0.75rem;
+	}
+
+	.rsv-time-label {
+		background: #f9fafb;
+		color: #6b7280;
+	}
+
+	button.rsv-slot {
+		border: none;
+		cursor: pointer;
+		font: inherit;
+	}
+
+	.rsv-slot--free {
+		background: color-mix(in srgb, var(--rsv-free) 25%, white);
+	}
+
+	.rsv-slot--free:hover {
+		background: color-mix(in srgb, var(--rsv-free) 45%, white);
+	}
+
+	.rsv-slot--reserved {
+		background: color-mix(in srgb, var(--rsv-reserved) 25%, white);
+		cursor: not-allowed;
+	}
+
+	.rsv-slot--pending {
+		background: color-mix(in srgb, var(--rsv-pending) 25%, white);
+		cursor: not-allowed;
+	}
+
+	.rsv-slot--closed,
+	.rsv-slot--past {
+		background: var(--rsv-closed);
+		cursor: not-allowed;
+	}
+
+	.rsv-message {
+		padding: 0.75rem;
+		border-radius: 0.375rem;
+		background: #f3f4f6;
+	}
+
+	.rsv-message--error {
+		background: #fef2f2;
+		color: #991b1b;
+	}
+
+	.rsv-message--success {
+		background: #f0fdf4;
+		color: #166534;
+	}
+
+	.rsv-form {
+		margin-top: 1rem;
+		border: 1px solid #e5e7eb;
+		border-radius: 0.5rem;
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		max-width: 28rem;
+	}
+
+	.rsv-form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-size: 0.9rem;
+	}
+
+	.rsv-form-field input,
+	.rsv-form-field textarea {
+		border: 1px solid #d1d5db;
+		border-radius: 0.375rem;
+		padding: 0.5rem;
+		font: inherit;
+	}
+
+	.rsv-form-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.rsv-honeypot {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+</style>
