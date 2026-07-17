@@ -1,0 +1,145 @@
+---
+import { getMenu, getSiteSettings } from "emdash";
+import {
+	WidgetArea,
+	EmDashHead,
+	EmDashBodyStart,
+	EmDashBodyEnd,
+} from "emdash/ui";
+import { createPublicPageContext } from "emdash/page";
+import LiveSearch from "emdash/ui/search";
+import { resolveStarterSiteIdentity } from "../utils/site-identity";
+
+interface Props {
+	title: string;
+	pageTitle?: string | null;
+	description?: string | null;
+	image?: string | null;
+	canonical?: string | null;
+	/** Pass content reference for plugin page contributions on content pages */
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { title, pageTitle, description, image, canonical, content } = Astro.props;
+const { siteTitle, siteTagline, siteLogo } = resolveStarterSiteIdentity(await getSiteSettings());
+const fullTitle = title.includes(siteTitle) ? title : `${title} — ${siteTitle}`;
+const pageDescription = description ?? siteTagline;
+
+const menu = await getMenu("primary");
+
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: "website",
+	title: fullTitle,
+	pageTitle: pageTitle ?? title,
+	description: pageDescription,
+	canonical,
+	image,
+	content,
+	siteName: siteTitle,
+});
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{fullTitle}</title>
+		{pageDescription && <meta name="description" content={pageDescription} />}
+		{canonical && <link rel="canonical" href={canonical} />}
+		<EmDashHead page={pageCtx} />
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+
+		<header>
+			<nav>
+				<a href="/">
+					{siteLogo
+						? <img src={siteLogo.url} alt={siteLogo.alt || siteTitle} style="height:48px;width:auto;margin:-8px 0;display:block;" />
+						: siteTitle
+					}
+				</a>
+				{
+					menu?.items.map((item) => (
+						<a href={item.url} target={item.target}>
+							{item.label}
+						</a>
+					))
+				}
+				<LiveSearch placeholder="Search..." collections={["posts", "pages"]} />
+			</nav>
+		</header>
+
+		<main>
+			<slot />
+		</main>
+
+		<footer>
+			<WidgetArea name="sidebar" />
+			<p class="copyright">&copy; {new Date().getFullYear()} {siteTitle}</p>
+		</footer>
+
+		<EmDashBodyEnd page={pageCtx} />
+	</body>
+</html>
+
+<style>
+	body {
+		margin: 0;
+		font-family:
+			system-ui,
+			-apple-system,
+			"Segoe UI",
+			sans-serif;
+		color: #1a1a1a;
+	}
+
+	header {
+		border-bottom: 1px solid #e5e5e5;
+	}
+
+	header nav {
+		max-width: 60rem;
+		margin: 0 auto;
+		padding: 1rem 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+	}
+
+	header nav a {
+		color: #1a1a1a;
+		text-decoration: none;
+		font-weight: 500;
+	}
+
+	header nav a:first-child {
+		font-weight: 700;
+		font-size: 1.125rem;
+		margin-right: auto;
+	}
+
+	header nav a:hover {
+		text-decoration: underline;
+	}
+
+	main {
+		min-height: 60vh;
+	}
+
+	footer {
+		border-top: 1px solid #e5e5e5;
+		margin-top: 4rem;
+		padding: 1.5rem;
+		text-align: center;
+		color: #666;
+		font-size: 0.875rem;
+	}
+
+	footer .copyright {
+		margin: 0.5rem 0 0;
+	}
+</style>

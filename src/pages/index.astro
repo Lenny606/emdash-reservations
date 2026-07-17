@@ -1,0 +1,50 @@
+---
+import { getSiteSettings } from "emdash";
+import Base from "../layouts/Base.astro";
+import { resolveStarterSiteIdentity } from "../utils/site-identity";
+
+const { siteTitle, siteTagline } = resolveStarterSiteIdentity(await getSiteSettings());
+---
+
+<Base title={siteTitle} description={siteTagline}>
+	<section class="hero">
+		<h1>{siteTitle}</h1>
+		<p class="tagline">{siteTagline}</p>
+		<p>Book your table with us in just a few clicks.</p>
+		<a class="cta" href="/reservations">Make a Reservation</a>
+	</section>
+</Base>
+
+<style>
+	.hero {
+		max-width: 40rem;
+		margin: 4rem auto;
+		padding: 0 1.5rem;
+		text-align: center;
+	}
+
+	.hero h1 {
+		font-size: 2.25rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.tagline {
+		color: #666;
+		margin-bottom: 1.5rem;
+	}
+
+	.cta {
+		display: inline-block;
+		margin-top: 1.5rem;
+		padding: 0.75rem 1.75rem;
+		background: #1a1a1a;
+		color: #fff;
+		text-decoration: none;
+		border-radius: 6px;
+		font-weight: 600;
+	}
+
+	.cta:hover {
+		background: #333;
+	}
+</style>
