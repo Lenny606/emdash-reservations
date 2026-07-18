@@ -49,14 +49,15 @@ Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako prvn
 - [x] **Odchylky od plánu (drobné, implementační):** (1) Aktivní dny jako 7× `Checkbox` (Mon–Sun) místo `Select` s `multiple` — jasnější UX pro týdenní rozvrh, jednodušší na implementaci než ověřovat Select's multi-value kontrakt. (2) Chybové/úspěšné hlášení přes Kumo `Banner` inline ve formuláři, ne `toast` — nebylo ověřené, že host poskytuje `ToastProvider` kontext (POC ho netestoval), `Banner` nepotřebuje žádný kontext. (3) `admin/api.ts` nepoužívá Zod na parsování odpovědí (jen `import type` z `shared/dto.ts`) — sjednoceno se stávající konvencí `client/api-client.ts`, které taky Zod na klientu nepoužívá.
 - [x] **Ověření (Playwright, live):** stránka vykreslí formulář se všemi Kumo komponentami stylovanými shodně se zbytkem adminu (screenshot); úprava hex textového pole u „Free" okamžitě mění `value` sousedního `<input type="color">` (ověřeno přes `evaluate`); uložení zobrazí „Saved" banner; po přechodu na `/reservations` je nová barva vidět v `--rsv-free` CSS proměnné (ověřeno `getComputedStyle`) — kompletní round-trip admin → server → veřejná stránka. 0 console chyb, server log bez chyb, typecheck čistý. Testovací barva vrácena zpět na výchozí `#22c55e`.
 
-## Fáze N4 — Seznam + Detail
+## Fáze N4 — Seznam + Detail ✅ (2026-07-18)
 
-- [ ] `src/admin/views/ListView.tsx` — filtr formulář (status, období, e-mail, přepínač stornované), Kumo `Table` + `Pagination`, řádek → `onSelect(id)` přepne view na `"detail"`.
-- [ ] `src/admin/views/DetailView.tsx` — všechna pole `AdminReservationDetailDto` (včetně PII/meta), akční tlačítka podle stavové matice (ADMIN_SPEC §4): Potvrdit / Upravit / Stornovat / Smazat / Zpět.
-- [ ] `src/admin/components/ConfirmButton.tsx` — Kumo `Dialog` + `Button`, generický wrapper pro akce vyžadující potvrzení (Smazat, Storno) — nahrazuje `ButtonElement.confirm`.
-- [ ] `src/admin/components/StatCards.tsx` — `admin/overview` čísla, zobrazit nad `ListView`.
-- [ ] Napojit `ReservationsAdminPage` navigaci: `list ⇄ detail`, filtr/cursor se drží v React state (žádné serializování do URL, NATIVE_SPEC §5.2).
-- [ ] **Ověření:** filtrace, stránkování, přepnutí na stornované, proklik do detailu a zpět se zachováním pozice seznamu (real React state, ne round-trip jako ADMIN_PLAN A1 popisoval pro Block Kit).
+- [x] `src/admin/views/ListView.tsx` — filtr formulář (status, období, e-mail, přepínač stornované), Kumo `Table`, řádek → `onSelect(id, fromHistory)` přepne view na `"detail"`.
+- [x] `src/admin/views/DetailView.tsx` — všechna pole `AdminReservationDetailDto` (včetně PII/meta), akční tlačítka podle stavové matice (ADMIN_SPEC §4): Potvrdit / Upravit / Stornovat / Smazat / Zpět.
+- [x] `src/admin/components/ConfirmButton.tsx` — Kumo `Dialog` (role `alertdialog`) + `Button`, generický wrapper pro akce vyžadující potvrzení (Smazat, Storno) — nahrazuje `ButtonElement.confirm`.
+- [x] `src/admin/components/StatCards.tsx` — `admin/overview` čísla, zobrazeno nad `ListView`.
+- [x] Napojena `ReservationsAdminPage` navigace: `list ⇄ detail`, filtr/cursor se drží v React state (žádné serializování do URL, NATIVE_SPEC §5.2).
+- [x] **Odchylka od plánu:** místo Kumo `Pagination` (page-number komponenta) jednoduché tlačítko „Next" nad `cursor`/`hasMore` z `AdminListResponseDto` — storage API nabízí jen dopředné kurzorové stránkování (ADMIN_SPEC §3 to sama předpokládá: "Zpětné stránkování storage API nenabízí"), takže číslovaná `Pagination` komponenta by předstírala možnost, kterou API nemá.
+- [x] **Ověření (Playwright, live, přes testovací rezervaci vytvořenou napřímo přes `admin/reservation-create`):** filtrace (status disabled při zapnutém "Show cancelled"), proklik řádku do detailu, Potvrdit (pending→confirmed, tlačítko zmizí), Stornovat (dialog → přesun do historie → návrat na seznam, stat karty se aktualizují), přepnutí "Show cancelled" (historie viditelná, jen tlačítko Smazat dle matice), Smazat z historie (dialog → mizí ze seznamu). 0 console chyb, server log bez chyb po celém cyklu, typecheck čistý.
 
 ## Fáze N5 — Editace + Ruční vytvoření
 
