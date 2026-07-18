@@ -3,9 +3,10 @@ import type { PluginDescriptor } from "emdash";
 export function reservationsPlugin(): PluginDescriptor {
 	return {
 		id: "reservations",
-		version: "0.1.0",
-		format: "standard",
-		entrypoint: "@emdash-reservations/plugin-reservations/sandbox",
+		version: "0.2.0",
+		format: "native",
+		entrypoint: "@emdash-reservations/plugin-reservations/runtime",
+		adminEntry: "@emdash-reservations/plugin-reservations/admin",
 		capabilities: ["email:send"],
 		// This emdash version's PluginDescriptor only supports flat single-field indexes
 		// (no composite tuples) -- availability queries filter by `date` and sort

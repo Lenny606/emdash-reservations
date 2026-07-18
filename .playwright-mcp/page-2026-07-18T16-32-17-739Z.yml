@@ -1,0 +1,193 @@
+- generic [active] [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - navigation [ref=f3e3]:
+      - link "My Site" [ref=f3e4] [cursor=pointer]:
+        - /url: /
+      - link "Home" [ref=f3e5] [cursor=pointer]:
+        - /url: /
+      - link "Posts" [ref=f3e6] [cursor=pointer]:
+        - /url: /posts
+      - link "About" [ref=f3e7] [cursor=pointer]:
+        - /url: /about
+      - searchbox "Search..." [ref=f3e9]
+  - main [ref=f3e10]:
+    - heading "Reservations" [level=1] [ref=f3e11]
+    - generic [ref=f3e13]:
+      - generic [ref=f3e627]:
+        - button "Previous week" [ref=f3e628] [cursor=pointer]: ‹
+        - generic [ref=f3e629]: 20.07. – 26.07.
+        - button "Today" [ref=f3e630] [cursor=pointer]
+        - button "Next week" [ref=f3e631] [cursor=pointer]: ›
+      - generic [ref=f3e632]:
+        - generic [ref=f3e634]:
+          - generic [ref=f3e635]: Mon
+          - generic [ref=f3e636]: 20.07.
+        - generic [ref=f3e637]:
+          - generic [ref=f3e638]: Tue
+          - generic [ref=f3e639]: 21.07.
+        - generic [ref=f3e640]:
+          - generic [ref=f3e641]: Wed
+          - generic [ref=f3e642]: 22.07.
+        - generic [ref=f3e643]:
+          - generic [ref=f3e644]: Thu
+          - generic [ref=f3e645]: 23.07.
+        - generic [ref=f3e646]:
+          - generic [ref=f3e647]: Fri
+          - generic [ref=f3e648]: 24.07.
+        - generic [ref=f3e649]:
+          - generic [ref=f3e650]: Sat
+          - generic [ref=f3e651]: 25.07.
+        - generic [ref=f3e652]:
+          - generic [ref=f3e653]: Sun
+          - generic [ref=f3e654]: 26.07.
+        - generic [ref=f3e655]: 08:00
+        - button "20.07. 08:00" [ref=f3e656] [cursor=pointer]
+        - button "21.07. 08:00" [ref=f3e657] [cursor=pointer]
+        - button "22.07. 08:00" [ref=f3e658] [cursor=pointer]
+        - button "23.07. 08:00" [ref=f3e659] [cursor=pointer]
+        - button "24.07. 08:00" [ref=f3e660] [cursor=pointer]
+        - generic [ref=f3e663]: 08:30
+        - button "20.07. 08:30" [ref=f3e664] [cursor=pointer]
+        - button "21.07. 08:30" [ref=f3e665] [cursor=pointer]
+        - button "22.07. 08:30" [ref=f3e666] [cursor=pointer]
+        - button "23.07. 08:30" [ref=f3e667] [cursor=pointer]
+        - button "24.07. 08:30" [ref=f3e668] [cursor=pointer]
+        - generic [ref=f3e671]: 09:00
+        - button "20.07. 09:00" [ref=f3e672] [cursor=pointer]
+        - button "21.07. 09:00" [ref=f3e673] [cursor=pointer]
+        - button "22.07. 09:00" [ref=f3e674] [cursor=pointer]
+        - button "23.07. 09:00" [ref=f3e675] [cursor=pointer]
+        - button "24.07. 09:00" [ref=f3e676] [cursor=pointer]
+        - generic [ref=f3e679]: 09:30
+        - button "20.07. 09:30" [ref=f3e680] [cursor=pointer]
+        - button "21.07. 09:30" [ref=f3e681] [cursor=pointer]
+        - button "22.07. 09:30" [ref=f3e682] [cursor=pointer]
+        - button "23.07. 09:30" [ref=f3e683] [cursor=pointer]
+        - button "24.07. 09:30" [ref=f3e684] [cursor=pointer]
+        - generic [ref=f3e687]: 10:00
+        - button "20.07. 10:00" [disabled] [ref=f3e688] [cursor=pointer]
+        - button "21.07. 10:00" [ref=f3e689] [cursor=pointer]
+        - button "22.07. 10:00" [ref=f3e690] [cursor=pointer]
+        - button "23.07. 10:00" [ref=f3e691] [cursor=pointer]
+        - button "24.07. 10:00" [ref=f3e692] [cursor=pointer]
+        - generic [ref=f3e695]: 10:30
+        - button "20.07. 10:30" [ref=f3e696] [cursor=pointer]
+        - button "21.07. 10:30" [ref=f3e697] [cursor=pointer]
+        - button "22.07. 10:30" [ref=f3e698] [cursor=pointer]
+        - button "23.07. 10:30" [ref=f3e699] [cursor=pointer]
+        - button "24.07. 10:30" [ref=f3e700] [cursor=pointer]
+        - generic [ref=f3e703]: 11:00
+        - button "20.07. 11:00" [ref=f3e704] [cursor=pointer]
+        - button "21.07. 11:00" [ref=f3e705] [cursor=pointer]
+        - button "22.07. 11:00" [ref=f3e706] [cursor=pointer]
+        - button "23.07. 11:00" [ref=f3e707] [cursor=pointer]
+        - button "24.07. 11:00" [ref=f3e708] [cursor=pointer]
+        - generic [ref=f3e711]: 11:30
+        - button "20.07. 11:30" [ref=f3e712] [cursor=pointer]
+        - button "21.07. 11:30" [ref=f3e713] [cursor=pointer]
+        - button "22.07. 11:30" [ref=f3e714] [cursor=pointer]
+        - button "23.07. 11:30" [ref=f3e715] [cursor=pointer]
+        - button "24.07. 11:30" [ref=f3e716] [cursor=pointer]
+        - generic [ref=f3e719]: 12:00
+        - button "20.07. 12:00" [ref=f3e720] [cursor=pointer]
+        - button "21.07. 12:00" [ref=f3e721] [cursor=pointer]
+        - button "22.07. 12:00" [ref=f3e722] [cursor=pointer]
+        - button "23.07. 12:00" [ref=f3e723] [cursor=pointer]
+        - button "24.07. 12:00" [ref=f3e724] [cursor=pointer]
+        - generic [ref=f3e727]: 12:30
+        - button "20.07. 12:30" [ref=f3e728] [cursor=pointer]
+        - button "21.07. 12:30" [ref=f3e729] [cursor=pointer]
+        - button "22.07. 12:30" [ref=f3e730] [cursor=pointer]
+        - button "23.07. 12:30" [ref=f3e731] [cursor=pointer]
+        - button "24.07. 12:30" [ref=f3e732] [cursor=pointer]
+        - generic [ref=f3e735]: 13:00
+        - button "20.07. 13:00" [ref=f3e736] [cursor=pointer]
+        - button "21.07. 13:00" [ref=f3e737] [cursor=pointer]
+        - button "22.07. 13:00" [ref=f3e738] [cursor=pointer]
+        - button "23.07. 13:00" [ref=f3e739] [cursor=pointer]
+        - button "24.07. 13:00" [ref=f3e740] [cursor=pointer]
+        - generic [ref=f3e743]: 13:30
+        - button "20.07. 13:30" [ref=f3e744] [cursor=pointer]
+        - button "21.07. 13:30" [ref=f3e745] [cursor=pointer]
+        - button "22.07. 13:30" [ref=f3e746] [cursor=pointer]
+        - button "23.07. 13:30" [ref=f3e747] [cursor=pointer]
+        - button "24.07. 13:30" [ref=f3e748] [cursor=pointer]
+        - generic [ref=f3e751]: 14:00
+        - button "20.07. 14:00" [ref=f3e752] [cursor=pointer]
+        - button "21.07. 14:00" [ref=f3e753] [cursor=pointer]
+        - button "22.07. 14:00" [ref=f3e754] [cursor=pointer]
+        - button "23.07. 14:00" [ref=f3e755] [cursor=pointer]
+        - button "24.07. 14:00" [ref=f3e756] [cursor=pointer]
+        - generic [ref=f3e759]: 14:30
+        - button "20.07. 14:30" [ref=f3e760] [cursor=pointer]
+        - button "21.07. 14:30" [ref=f3e761] [cursor=pointer]
+        - button "22.07. 14:30" [ref=f3e762] [cursor=pointer]
+        - button "23.07. 14:30" [ref=f3e763] [cursor=pointer]
+        - button "24.07. 14:30" [ref=f3e764] [cursor=pointer]
+        - generic [ref=f3e767]: 15:00
+        - button "20.07. 15:00" [ref=f3e768] [cursor=pointer]
+        - button "21.07. 15:00" [ref=f3e769] [cursor=pointer]
+        - button "22.07. 15:00" [ref=f3e770] [cursor=pointer]
+        - button "23.07. 15:00" [ref=f3e771] [cursor=pointer]
+        - button "24.07. 15:00" [ref=f3e772] [cursor=pointer]
+        - generic [ref=f3e775]: 15:30
+        - button "20.07. 15:30" [ref=f3e776] [cursor=pointer]
+        - button "21.07. 15:30" [ref=f3e777] [cursor=pointer]
+        - button "22.07. 15:30" [ref=f3e778] [cursor=pointer]
+        - button "23.07. 15:30" [ref=f3e779] [cursor=pointer]
+        - button "24.07. 15:30" [ref=f3e780] [cursor=pointer]
+        - generic [ref=f3e783]: 16:00
+        - button "20.07. 16:00" [ref=f3e784] [cursor=pointer]
+        - button "21.07. 16:00" [ref=f3e785] [cursor=pointer]
+        - button "22.07. 16:00" [ref=f3e786] [cursor=pointer]
+        - button "23.07. 16:00" [ref=f3e787] [cursor=pointer]
+        - button "24.07. 16:00" [ref=f3e788] [cursor=pointer]
+        - generic [ref=f3e791]: 16:30
+        - button "20.07. 16:30" [ref=f3e792] [cursor=pointer]
+        - button "21.07. 16:30" [ref=f3e793] [cursor=pointer]
+        - button "22.07. 16:30" [ref=f3e794] [cursor=pointer]
+        - button "23.07. 16:30" [ref=f3e795] [cursor=pointer]
+        - button "24.07. 16:30" [ref=f3e796] [cursor=pointer]
+        - generic [ref=f3e799]: 17:00
+        - button "20.07. 17:00" [ref=f3e800] [cursor=pointer]
+        - button "21.07. 17:00" [ref=f3e801] [cursor=pointer]
+        - button "22.07. 17:00" [ref=f3e802] [cursor=pointer]
+        - button "23.07. 17:00" [ref=f3e803] [cursor=pointer]
+        - button "24.07. 17:00" [ref=f3e804] [cursor=pointer]
+        - generic [ref=f3e807]: 17:30
+        - button "20.07. 17:30" [ref=f3e808] [cursor=pointer]
+        - button "21.07. 17:30" [ref=f3e809] [cursor=pointer]
+        - button "22.07. 17:30" [ref=f3e810] [cursor=pointer]
+        - button "23.07. 17:30" [ref=f3e811] [cursor=pointer]
+        - button "24.07. 17:30" [ref=f3e812] [cursor=pointer]
+      - paragraph [ref=f3e815]: Your reservation request has been sent. We'll be in touch shortly.
+  - contentinfo [ref=f3e202]:
+    - generic [ref=f3e203]:
+      - generic [ref=f3e204]:
+        - heading "Search" [level=3] [ref=f3e205]
+        - generic [ref=f3e207]:
+          - searchbox "Search" [ref=f3e208]
+          - button "Search" [ref=f3e209]
+      - generic [ref=f3e210]:
+        - heading "Categories" [level=3] [ref=f3e211]
+        - list [ref=f3e213]:
+          - listitem [ref=f3e214]:
+            - link "General" [ref=f3e215] [cursor=pointer]:
+              - /url: /category/general
+            - text: (1)
+          - listitem [ref=f3e216]:
+            - link "Updates" [ref=f3e217] [cursor=pointer]:
+              - /url: /category/updates
+            - text: (0)
+      - generic [ref=f3e218]:
+        - heading "Recent Posts" [level=3] [ref=f3e219]
+        - list [ref=f3e221]:
+          - listitem [ref=f3e222]:
+            - link "Welcome" [ref=f3e223] [cursor=pointer]:
+              - /url: /posts/welcome
+    - paragraph [ref=f3e224]: © 2026 My Site
+  - generic [ref=f3e226]:
+    - generic [ref=f3e227]: EmDash
+    - generic "Toggle edit mode" [ref=f3e229] [cursor=pointer]:
+      - checkbox "Edit"
+      - generic [ref=f3e232]: Edit

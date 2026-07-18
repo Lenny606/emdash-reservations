@@ -13,15 +13,16 @@ NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) jsou ověřené jen staticky (typy v `.
 - [ ] Zjištění zapsat do NATIVE_SPEC.md §2 jako doplněk (styl PLAN fáze 0/N0-* položky) — smaž nejistoty formulované jako "ověřit" a nahraď zjištěným chováním.
 - [ ] Smazat/zahodit provizorní kód této fáze (byl jen na ověření, ne finální implementace).
 
-## Fáze N1 — Descriptor a runtime scaffold
+## Fáze N1 — Descriptor a runtime scaffold ✅ (2026-07-18)
 
-- [ ] `package.json`: `exports."."`, `"./runtime"` (přejmenováno z `"./sandbox"`), `"./admin"` (nové); `peerDependencies` doplnit `react`, `react-dom`, `@cloudflare/kumo` (přesné verze dle NATIVE_SPEC §7); `devDependencies` doplnit `@types/react`, `@types/react-dom`.
-- [ ] `src/index.ts`: `format: "native"`, `entrypoint` → `.../runtime`, `adminEntry` → `.../admin`, verze bump na `0.2.0`.
-- [ ] `src/sandbox-entry.ts` → přejmenovat na `src/runtime.ts`; default export přepsat z `satisfies SandboxedPlugin` objektu na `createPlugin()` vracející `definePlugin({...})` (import `definePlugin`/`PluginContext`/`RouteContext` z `"emdash"`, ne `"emdash/plugin"`).
-- [ ] Přepsat signaturu **existujících** rout (`public/csrf`, `public/availability`, `public/reserve`) z `(routeCtx, ctx)` na `(ctx)`; smazat `readRequestMeta` helper (nahradit přímým `ctx.requestMeta`); `public/availability` beze změny v logice parsování query stringu (jen `routeCtx.request.url` → `ctx.request.url`, teď skutečný `Request` — `new URL(ctx.request.url)` funguje stejně).
-- [ ] Hooks (`plugin:install` atd.) — přesun beze změny obsahu, jen typový import.
-- [ ] Smazat `admin` routu ze `sandbox-entry.ts`/`runtime.ts` (nahradí ji fáze N2) a `buildAdminPageBlocks`/`saveSettingsFromForm`/`confirmReservation`/`cancelReservation` — tyhle funkce se přesunou a přepíšou v N2/N6 do `server/admin-api.ts`.
-- [ ] **Ověření:** `npx emdash dev` na čisté DB startuje bez chyb; veřejná stránka `/reservations` funguje beze změny (availability fetch, reserve flow) — typecheck (`tsc --noEmit`) prochází.
+- [x] `package.json`: `exports."."`, `"./runtime"` (přejmenováno z `"./sandbox"`), `"./admin"` (nové); `peerDependencies` doplnit `react`, `react-dom` (19.2.4), `@cloudflare/kumo` (2.6.0); `devDependencies` doplnit `@types/react` (19.2.17), `@types/react-dom` (19.2.3).
+- [x] `src/index.ts`: `format: "native"`, `entrypoint` → `.../runtime`, `adminEntry` → `.../admin`, verze bump na `0.2.0`.
+- [x] `src/sandbox-entry.ts` → přejmenováno na `src/runtime.ts`; export přepsán z `satisfies SandboxedPlugin` objektu na **pojmenovaný** `export function createPlugin()` vracející `definePlugin({...})` — **ne `export default`**, viz NATIVE_SPEC N0-8 (shodilo by celý web, ověřeno na POC).
+- [x] Přepsána signatura **existujících** rout (`public/csrf`, `public/availability`, `public/reserve`) z `(routeCtx, ctx)` na `(ctx)`; smazán `readRequestMeta` helper (nahrazeno přímým `ctx.requestMeta`); `public/availability` beze změny v logice parsování query stringu.
+- [x] Hooks (`plugin:install` atd.) — přesunuty beze změny obsahu.
+- [x] Smazána `admin` routa ze `runtime.ts` a `buildAdminPageBlocks`/`saveSettingsFromForm`/`confirmReservation`/`cancelReservation` — přesunou se a přepíšou v N2/N6 do `server/admin-api.ts`. `server/admin-ui.ts` (Block Kit block buildery) zůstává v repu nepoužité až do smazání v N3.
+- [x] **Odchylka od plánu (bezpečnostní opatření):** `src/admin/index.tsx` vytvořen už teď jako minimální placeholder (`export const pages = { "/reservations": () => <div>...</div> }`), ne až v N3. Důvod: `adminEntry` v descriptoru odkazuje na modul, který musí existovat, jinak hrozí stejný typ pádu celého webu jako u POC nálezu N0-8 (tentokrát by šlo o nenalezitelný import místo špatného tvaru exportu, ale riziko je stejné — ověřeno, že modul musí reálně existovat). N3 tento placeholder nahradí skutečným obsahem, needeleguje se nic navíc.
+- [x] **Ověření:** `npx astro dev` (background) startuje bez chyb; `pnpm exec astro check` 0 chyb/varování/hints; `/reservations` funguje beze změny (Playwright: procházení týdnů, výběr slotu, odeslání rezervace → "Your reservation request has been sent", slot se zobrazí jako obsazený); `/_emdash/admin/plugins/reservations/reservations` vykreslí placeholder React stránku bez pádu webu (ověřeno přes dev-bypass + Playwright snapshot, 0 console errors).
 
 ## Fáze N2 — Admin API vrstva (server, bez UI)
 
@@ -37,7 +38,7 @@ NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) jsou ověřené jen staticky (typy v `.
 
 Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako první viditelný výstup.
 
-- [ ] `src/admin/index.tsx` — `export const pages = { "/reservations": ReservationsAdminPage }`.
+- [ ] `src/admin/index.tsx` — nahradit N1 placeholder skutečným `export const pages = { "/reservations": ReservationsAdminPage }`.
 - [ ] `src/admin/ReservationsAdminPage.tsx` — kostra s `useState` view-routerem (NATIVE_SPEC §5.2), zatím jen `"settings"` view aktivní, ostatní placeholder.
 - [ ] `src/admin/api.ts` — typovaný fetch wrapper nad `admin/*` routami (base URL ověřená v N0), Zod parse odpovědí, jednotné chybové zpracování (toast přes Kumo `toast`).
 - [ ] `src/admin/components/ColorField.tsx` — dle NATIVE_SPEC §5.3.
