@@ -28,6 +28,27 @@ export function renderStatusChangeEmail(reservation: Reservation): EmailTemplate
 	};
 }
 
+/** Customer-facing (English, matches the public site's language -- unlike the admin-facing
+ * templates above, which stay Czech per PLAN.md's documented deviation). Sent for manual
+ * admin-created reservations (ADMIN_SPEC §5/§6): the customer wasn't part of the booking
+ * flow, so they need their own confirmation instead of the admin-facing "new reservation"
+ * email (the admin already knows -- they just created it). */
+export function renderReservationConfirmedEmail(reservation: Reservation): EmailTemplate {
+	return {
+		subject: `Reservation confirmed: ${reservation.date} ${reservation.startTime}`,
+		text: [
+			`Hi ${reservation.name},`,
+			"",
+			`Your reservation has been confirmed for ${reservation.date} at ${reservation.startTime}.`,
+			reservation.note ? `Note: ${reservation.note}` : null,
+			"",
+			"See you then!",
+		]
+			.filter((line): line is string => line !== null)
+			.join("\n"),
+	};
+}
+
 async function sendIfConfigured(ctx: PluginContext, settings: ReservationSettings, template: EmailTemplate): Promise<void> {
 	if (!settings.notifyEnabled || !settings.notifyEmail) {
 		ctx.log.info("reservations: notifications disabled or no notifyEmail set, skipping");
@@ -44,6 +65,26 @@ async function sendIfConfigured(ctx: PluginContext, settings: ReservationSetting
 	}
 }
 
+/** Same `notifyEnabled` guard as `sendIfConfigured`, but sends to the reservation's own
+ * email instead of the admin's configured `notifyEmail` -- there's always a destination
+ * (the reservation itself), so unlike `sendIfConfigured` this doesn't also require
+ * `notifyEmail` to be set. */
+async function sendToCustomer(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation, template: EmailTemplate): Promise<void> {
+	if (!settings.notifyEnabled) {
+		ctx.log.info("reservations: notifications disabled, skipping customer email");
+		return;
+	}
+	if (!ctx.email) {
+		ctx.log.info("reservations: email transport not configured, skipping customer email");
+		return;
+	}
+	try {
+		await ctx.email.send({ to: reservation.email, subject: template.subject, text: template.text });
+	} catch (error) {
+		ctx.log.warn("reservations: failed to send customer email", { error: String(error) });
+	}
+}
+
 /** Fire-and-forget: never throws, never blocks or fails the reservation flow. */
 export function notifyNewReservation(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation): void {
 	void sendIfConfigured(ctx, settings, renderNewReservationEmail(reservation));
@@ -51,4 +92,11 @@ export function notifyNewReservation(ctx: PluginContext, settings: ReservationSe
 
 export function notifyStatusChange(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation): void {
 	void sendIfConfigured(ctx, settings, renderStatusChangeEmail(reservation));
+}
+
+/** Manual admin creation only (ADMIN_SPEC §5/§6) -- replaces the admin-facing
+ * `notifyNewReservation` for that one call site (the admin doesn't need to be told about a
+ * reservation they just created themselves). */
+export function notifyCustomerReservationConfirmed(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation): void {
+	void sendToCustomer(ctx, settings, reservation, renderReservationConfirmedEmail(reservation));
 }

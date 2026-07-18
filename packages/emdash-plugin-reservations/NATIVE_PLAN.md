@@ -59,13 +59,13 @@ Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako prvn
 - [x] **Odchylka od plánu:** místo Kumo `Pagination` (page-number komponenta) jednoduché tlačítko „Next" nad `cursor`/`hasMore` z `AdminListResponseDto` — storage API nabízí jen dopředné kurzorové stránkování (ADMIN_SPEC §3 to sama předpokládá: "Zpětné stránkování storage API nenabízí"), takže číslovaná `Pagination` komponenta by předstírala možnost, kterou API nemá.
 - [x] **Ověření (Playwright, live, přes testovací rezervaci vytvořenou napřímo přes `admin/reservation-create`):** filtrace (status disabled při zapnutém "Show cancelled"), proklik řádku do detailu, Potvrdit (pending→confirmed, tlačítko zmizí), Stornovat (dialog → přesun do historie → návrat na seznam, stat karty se aktualizují), přepnutí "Show cancelled" (historie viditelná, jen tlačítko Smazat dle matice), Smazat z historie (dialog → mizí ze seznamu). 0 console chyb, server log bez chyb po celém cyklu, typecheck čistý.
 
-## Fáze N5 — Editace + Ruční vytvoření
+## Fáze N5 — Editace + Ruční vytvoření ✅ (2026-07-18)
 
-- [ ] `src/admin/components/ReservationForm.tsx` — sdílený formulář pro Edit i Create (datum, čas, jméno, e-mail, telefon, poznámka, status).
-- [ ] `src/admin/views/EditView.tsx` — předvyplněný `ReservationForm`, submit → `admin/reservation-update`; kolize nového slotu → `banner` v místě (beze změny dat), stejná re-key mechanika jako ADMIN_SPEC §5 Upravit.
-- [ ] `src/admin/views/CreateView.tsx` — prázdný `ReservationForm`, default status `confirmed`, submit → `admin/reservation-create`.
-- [ ] Notifikace při ručním vytvoření: `notifyNewReservation` větev pro zákazníka (ADMIN_SPEC §6) — `notifyEnabled` guard.
-- [ ] **Ověření:** editace kontaktů, přesun na volný slot (starý se uvolní, nový obsadí v kalendáři), kolize při přesunu na obsazený slot, vytvoření na volný slot i mimo `maxDaysAhead`/při vypnutých veřejných rezervacích.
+- [x] `src/admin/components/ReservationForm.tsx` — sdílený formulář pro Edit i Create (datum, čas, jméno, e-mail, telefon, poznámka přes Kumo `Textarea`, status).
+- [x] `src/admin/views/EditView.tsx` — předvyplněný `ReservationForm`, submit → `admin/reservation-update`; kolize nového slotu → `banner` v místě (beze změny dat), stejná re-key mechanika jako ADMIN_SPEC §5 Upravit. Jen pro aktivní rezervace (historie needituje se).
+- [x] `src/admin/views/CreateView.tsx` — prázdný `ReservationForm`, default status `confirmed`, submit → `admin/reservation-create`.
+- [x] Notifikace při ručním vytvoření: nová `notifyCustomerReservationConfirmed` (anglická šablona `renderReservationConfirmedEmail`, na rozdíl od českých admin-facing šablon) **nahrazuje** `notifyNewReservation` pro tuto jednu cestu (admin nepotřebuje být upozorněn na rezervaci, kterou právě sám vytvořil) — `notifyEnabled` guard, bez nutnosti `notifyEmail` (cíl je vždy `reservation.email`).
+- [x] **Ověření (Playwright + curl, live):** vytvoření nové rezervace → rovnou detail; Edit s prefillem všech polí; přesun na volný slot (re-key, `createdAt` zachováno, `updatedAt` změněno); kolize při přesunu na obsazený slot → banner "That slot is already booked", **ověřeno přes API, že ani přesouvaný, ani cílový záznam se nezměnily**; ruční vytvoření na slot +100 dní dopředu **a** při `enabled: false` úspěšné (obchází `maxDaysAhead`/`enabled` dle ADMIN_SPEC §5), veřejná strana pro stejný týden zůstává korektně celá `closed`. Log potvrzuje `notifyCustomerReservationConfirmed` volání (no-op, `notifyEnabled` je defaultně false). Typecheck čistý, 0 console chyb.
 
 ## Fáze N6 — Smazání + Storno s notifikací
 

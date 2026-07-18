@@ -2,17 +2,16 @@ import { useState } from "react";
 import { Button } from "@cloudflare/kumo";
 import { ListView } from "./views/ListView";
 import { DetailView } from "./views/DetailView";
+import { CreateView } from "./views/CreateView";
+import { EditView } from "./views/EditView";
 import { SettingsView } from "./views/SettingsView";
 
 type ViewState =
 	| { view: "list" }
 	| { view: "detail"; id: string; fromHistory: boolean }
 	| { view: "create" }
+	| { view: "edit"; id: string }
 	| { view: "settings" };
-
-function ComingSoon({ label }: { label: string }) {
-	return <div style={{ color: "var(--kumo-subtle, #6b7280)" }}>{label} is coming in a later phase (NATIVE_PLAN N5).</div>;
-}
 
 export function ReservationsAdminPage() {
 	// Plain useState view-router (NATIVE_SPEC §5.2) -- no Block Kit action_id encoding,
@@ -20,7 +19,11 @@ export function ReservationsAdminPage() {
 	const [state, setState] = useState<ViewState>({ view: "list" });
 
 	const nav: Array<{ label: string; active: boolean; onClick: () => void }> = [
-		{ label: "Reservations", active: state.view === "list" || state.view === "detail", onClick: () => setState({ view: "list" }) },
+		{
+			label: "Reservations",
+			active: state.view === "list" || state.view === "detail",
+			onClick: () => setState({ view: "list" }),
+		},
 		{ label: "New reservation", active: state.view === "create", onClick: () => setState({ view: "create" }) },
 		{ label: "Settings", active: state.view === "settings", onClick: () => setState({ view: "settings" }) },
 	];
@@ -44,10 +47,22 @@ export function ReservationsAdminPage() {
 					id={state.id}
 					fromHistory={state.fromHistory}
 					onBack={() => setState({ view: "list" })}
-					onEdit={() => setState({ view: "create" })}
+					onEdit={(id) => setState({ view: "edit", id })}
 				/>
 			)}
-			{state.view === "create" && <ComingSoon label="Manual reservation creation / editing" />}
+			{state.view === "create" && (
+				<CreateView
+					onCreated={(id) => setState({ view: "detail", id, fromHistory: false })}
+					onCancel={() => setState({ view: "list" })}
+				/>
+			)}
+			{state.view === "edit" && (
+				<EditView
+					id={state.id}
+					onSaved={(id) => setState({ view: "detail", id, fromHistory: false })}
+					onCancel={() => setState({ view: "detail", id: state.id, fromHistory: false })}
+				/>
+			)}
 			{state.view === "settings" && <SettingsView />}
 		</div>
 	);

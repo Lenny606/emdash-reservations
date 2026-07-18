@@ -12,7 +12,7 @@ import type {
 import { addDays, makeSlotKey, mondayOf } from "../shared/slots";
 import type { Reservation, ReservationSettings } from "./model";
 import { loadSettings, saveSettings as persistSettings } from "./settings";
-import { notifyNewReservation, notifyStatusChange } from "./notifications";
+import { notifyCustomerReservationConfirmed, notifyStatusChange } from "./notifications";
 import { sanitizeAdminUpsert, validateReservationRequest } from "./validation";
 
 type WhereClause = NonNullable<QueryOptions["where"]>;
@@ -193,7 +193,9 @@ export async function createReservation(
 	};
 	await collection.put(slotKey, reservation);
 
-	notifyNewReservation(ctx, settings, reservation);
+	// Customer-facing confirmation, not the admin-facing `notifyNewReservation` -- the admin
+	// doesn't need telling about a reservation they just created themselves (ADMIN_SPEC §5/§6).
+	notifyCustomerReservationConfirmed(ctx, settings, reservation);
 	ctx.log.info("reservations: admin created reservation", { slotKey });
 	return ok(toAdminDetailDto(slotKey, reservation, false));
 }
