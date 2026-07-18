@@ -21,13 +21,24 @@ export interface ReservationRequestValidation {
 	reason?: ReservationRequestRejection;
 }
 
+export interface ValidateReservationOptions {
+	/** Admin-created/edited reservations aren't bound by the public booking horizon
+	 * (ADMIN_SPEC §9.1) -- opening hours and active days still apply. Defaults to `true`
+	 * so the existing public call site's behavior is unchanged. */
+	enforceMaxDaysAhead?: boolean;
+}
+
 /** Business rules for a reservation request: correct grid, opening hours, active day,
- * not in the past, not beyond the configured booking horizon. */
+ * not in the past, and (unless disabled for the admin call site) not beyond the
+ * configured booking horizon. Shared between the public reserve route and the admin
+ * create/update routes (NATIVE_PLAN N2). */
 export function validateReservationRequest(
 	slotKey: string,
 	settings: ReservationSettings,
 	now: Date,
+	options: ValidateReservationOptions = {},
 ): ReservationRequestValidation {
+	const { enforceMaxDaysAhead = true } = options;
 	const { date, time } = parseSlotKey(slotKey);
 	if (!isValidDate(date) || !isValidSlotTime(time)) {
 		return { ok: false, reason: "invalid_slot_format" };
@@ -44,11 +55,27 @@ export function validateReservationRequest(
 		return { ok: false, reason: "in_past" };
 	}
 
-	const maxDate = new Date(now);
-	maxDate.setDate(maxDate.getDate() + settings.maxDaysAhead);
-	if (slotDate.getTime() > maxDate.getTime()) {
-		return { ok: false, reason: "beyond_max_days_ahead" };
+	if (enforceMaxDaysAhead) {
+		const maxDate = new Date(now);
+		maxDate.setDate(maxDate.getDate() + settings.maxDaysAhead);
+		if (slotDate.getTime() > maxDate.getTime()) {
+			return { ok: false, reason: "beyond_max_days_ahead" };
+		}
 	}
 
 	return { ok: true };
+}
+
+/** Shared sanitization for admin create/update payloads -- same rules as the public
+ * reserve route (`sandbox-entry.ts`/`runtime.ts`), applied to the admin upsert shape. */
+export function sanitizeAdminUpsert<T extends { name: string; email: string; phone?: string; note?: string }>(
+	dto: T,
+): T {
+	return {
+		...dto,
+		name: sanitizeText(dto.name, 200),
+		email: dto.email.trim().toLowerCase(),
+		phone: dto.phone ? sanitizeText(dto.phone, 50) : undefined,
+		note: dto.note ? sanitizeText(dto.note, 1000) : undefined,
+	};
 }

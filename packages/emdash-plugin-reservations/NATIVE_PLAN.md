@@ -2,16 +2,16 @@
 
 Realizuje [NATIVE_SPEC.md](./NATIVE_SPEC.md). Nahrazuje [ADMIN_PLAN.md](./ADMIN_PLAN.md) (Block Kit admin se nedokončuje). Fáze řazené tak, aby po každé byl web funkční a testovatelný — veřejná strana (`/reservations`, `public/*` routy) musí zůstat funkční po celou dobu, mění se jen v obálce (routa signatura), nikdy v logice.
 
-## Fáze N0 — Živé ověření předpokladů (před přepisem čehokoliv)
+## Fáze N0 — Živé ověření předpokladů (před přepisem čehokoliv) ✅ (2026-07-18)
 
-NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) jsou ověřené jen staticky (typy v `.d.mts`). Tahle fáze je jediná, kde se něco ověřuje experimentálně přímo v běžícím `npx emdash dev`, na co nejmenším možném kódu — než se do rewrite investuje čas.
+NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) byly ověřené jen staticky (typy v `.d.mts`); teď živě, na `src/poc/` a na hlavním pluginu po N1.
 
-- [ ] Minimální native descriptor: `format: "native"`, `entrypoint` na triviální `createPlugin()` vracející `definePlugin({ id, version, hooks: {}, routes: {} })` (žádné skutečné routy/hooky zatím) — ověřit, že `npx emdash dev` nastartuje a plugin je `active` v `/_emdash/api/admin/plugins`, stejně jako dnes se standard formátem.
-- [ ] Přidat `adminEntry` s `pages: { "/reservations": () => <div>hello native</div> }` (inline, ne ještě reálná stránka) — ověřit, že se na `/_emdash/admin/plugins/reservations/reservations` fakticky vykreslí React, ne chyba/404 (NT-1).
-- [ ] Přidat jednu neveřejnou native routu (`ping: async (ctx) => ({ ok: true, hasSession: !!ctx.??? })`) a zavolat ji z té inline stránky přes `apiFetch` z `@emdash-cms/admin` — ověřit auth/session chování (NT-2): projde nepřihlášený fetch? Jaká je skutečná URL (`/_emdash/api/plugins/reservations/ping`, dle CLAUDE.md konvence — ověřit, ne předpokládat)?
-- [ ] Stejná routa jako GET s query parametrem + `input:` Zod schema — ověřit, jestli GET/`input:` bug z PLAN.md fáze 3 platí i pro native dispatcher (NT-3). Bez ohledu na výsledek zůstává NATIVE_SPEC §4 rozhodnutí (všechny admin routy POST), tohle je jen pro přesnost dokumentace/budoucí rozhodování.
-- [ ] Zjištění zapsat do NATIVE_SPEC.md §2 jako doplněk (styl PLAN fáze 0/N0-* položky) — smaž nejistoty formulované jako "ověřit" a nahraď zjištěným chováním.
-- [ ] Smazat/zahodit provizorní kód této fáze (byl jen na ověření, ne finální implementace).
+- [x] Minimální native descriptor + `createPlugin()` — POC `reservations-native-poc` startuje, `active` v `/_emdash/api/admin/plugins`.
+- [x] `adminEntry` s `pages: {...}` vykresluje React (NT-1) — ověřeno na POC i na hlavním pluginu po N1 (placeholder stránka, i po studeném restartu).
+- [x] Nepublic native routa + `apiFetch` — auth/session ověřeno (NT-2, N0-9): bez session `401`, bez `X-EmDash-Request` header `403 CSRF_REJECTED`, s oběma `200`.
+- [x] GET + `input:` Zod schema — NT-3 reprodukováno i na native dispatcheru (N0-10): `400 VALIDATION_ERROR`, dispatcher parsuje JSON tělo bez ohledu na metodu.
+- [x] Zjištění zapsána do NATIVE_SPEC.md §2 (N0-8, N0-9, N0-10) a §9 (NT-1/2/3 uzavřeny).
+- [ ] Smazat/zahodit provizorní kód této fáze (`src/poc/`) — **záměrně ponecháno zatím**: POC zůstává v repu jako živý referenční příklad, dokud není hlavní native admin (N3+) hotový; smazat až na konci (viz N7 úklid).
 
 ## Fáze N1 — Descriptor a runtime scaffold ✅ (2026-07-18)
 
@@ -24,15 +24,16 @@ NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) jsou ověřené jen staticky (typy v `.
 - [x] **Odchylka od plánu (bezpečnostní opatření):** `src/admin/index.tsx` vytvořen už teď jako minimální placeholder (`export const pages = { "/reservations": () => <div>...</div> }`), ne až v N3. Důvod: `adminEntry` v descriptoru odkazuje na modul, který musí existovat, jinak hrozí stejný typ pádu celého webu jako u POC nálezu N0-8 (tentokrát by šlo o nenalezitelný import místo špatného tvaru exportu, ale riziko je stejné — ověřeno, že modul musí reálně existovat). N3 tento placeholder nahradí skutečným obsahem, needeleguje se nic navíc.
 - [x] **Ověření:** `npx astro dev` (background) startuje bez chyb; `pnpm exec astro check` 0 chyb/varování/hints; `/reservations` funguje beze změny (Playwright: procházení týdnů, výběr slotu, odeslání rezervace → "Your reservation request has been sent", slot se zobrazí jako obsazený); `/_emdash/admin/plugins/reservations/reservations` vykreslí placeholder React stránku bez pádu webu (ověřeno přes dev-bypass + Playwright snapshot, 0 console errors).
 
-## Fáze N2 — Admin API vrstva (server, bez UI)
+## Fáze N2 — Admin API vrstva (server, bez UI) ✅ (2026-07-18)
 
-- [ ] `shared/dto.ts`: `AdminListFilterDto`, `AdminUpsertReservationDto` (Zod, dle NATIVE_SPEC §6).
-- [ ] `server/mappers.ts`: `toAdminDetailDto(r)`, `toAdminSummaryDto(r)`, `fromAdminUpsert(dto, existing?)`.
-- [ ] `server/validation.ts`: sdílet sanitizaci/business validaci mezi veřejnou cestou a `AdminUpsertReservationDto` — admin výjimky (bez `maxDaysAhead`, bez `enabled`, otevírací doba + aktivní dny platí, ADMIN_SPEC §9.1).
-- [ ] Nový `server/admin-api.ts` — čisté funkce nesoucí logiku (žádné Block Kit): `getSettings`, `saveSettings`, `getOverview`, `listReservations(filter)`, `getReservationDetail(id, fromHistory)`, `confirmReservation`, `cancelReservation` (+ `notifyCancellation`, viz N6), `deleteReservation`, `createReservation`, `updateReservation` (re-key logika z ADMIN_SPEC §5 Upravit).
-- [ ] `src/runtime.ts`: nové routy `admin/settings-get`, `admin/settings-save`, `admin/overview`, `admin/reservations-list`, `admin/reservation-detail`, `admin/reservation-confirm`, `admin/reservation-delete`, `admin/reservation-create`, `admin/reservation-update` — všechny POST, žádná `public: true`, tenké wrappery nad `server/admin-api.ts` (routa = parsování inputu + volání funkce + log mutace přes `ctx.log.info`).
-- [ ] `admin/reservation-cancel` zatím **bez** notifikace (placeholder, doplní N6) — jen mechanika přesunu do historie (existující `cancelReservation` logika z fáze 5, přenesená beze změny).
-- [ ] **Ověření:** každá routa ručně přes `curl` s admin cookie (nebo dočasný test skript) — request/response tvar odpovídá DTO; typecheck prochází.
+- [x] `shared/dto.ts`: `AdminListFilterDto`, `AdminUpsertReservationDto`, `AdminSettingsUpdateDto`, `AdminReservationIdDto`, `AdminReservationUpdateDto` (Zod); `AdminReservationDetailDto`/`AdminReservationSummaryDto`/`AdminListResponseDto`/`AdminOverviewDto` (plain output types); `AdminActionResult<T>` (viz odchylka níže).
+- [x] Mappery `toAdminDetailDto(id, r, fromHistory)`, `toAdminSummaryDto(id, r, fromHistory)` — v `server/admin-api.ts` (ne `server/mappers.ts` — kolokováno s funkcemi, které je jediné volají, žádný jiný spotřebitel).
+- [x] `server/validation.ts`: `validateReservationRequest` rozšířena o `ValidateReservationOptions.enforceMaxDaysAhead` (default `true`, zachovává chování veřejné cesty beze změny) — sdílená s adminem přes `{ enforceMaxDaysAhead: false }`. Nový `sanitizeAdminUpsert`.
+- [x] Nový `server/admin-api.ts` — `getSettings`, `saveSettings`, `getOverview`, `listReservations(filter)`, `getReservationDetail(id, fromHistory)`, `confirmReservation`, `cancelReservation` (bez notifikace, viz N6), `deleteReservation`, `createReservation`, `updateReservation` (re-key).
+- [x] `src/runtime.ts`: routy `admin/settings-get`, `admin/settings-save`, `admin/overview`, `admin/reservations-list`, `admin/reservation-detail`, `admin/reservation-confirm`, `admin/reservation-cancel`, `admin/reservation-delete`, `admin/reservation-create`, `admin/reservation-update` — všechny POST, žádná `public: true`.
+- [x] `admin/reservation-cancel` bez notifikace (placeholder, doplní N6) — mechanika přesunu do historie beze změny z fáze 5.
+- [x] **Zásadní nález (N0-11, viz NATIVE_SPEC §2):** `throw PluginRouteError` z routy tohoto pluginu nikdy neprojde jako svůj HTTP status — vždy `500`, protože plugin balíček resolvuje `emdash` do jiné pnpm peer-instance než hostitelský dispatcher (`instanceof` napříč hranicí selže). Objeveno při ručním testu kolize slotu. **Oprava:** admin routy vrací `AdminActionResult<T>` (`{ ok, data } \| { ok:false, code, message }`) jako normální `200` odpověď, stejný vzor jako `public/reserve`. `public/availability`'s dva pre-existing throwy zůstávají zatím nedotčené (mimo rozsah N2, zapsáno jako odchylka v PLAN.md).
+- [x] **Ověření:** kompletní cyklus přes `curl` s admin session cookie + `X-EmDash-Request` header — settings-get/save (vč. Zod odmítnutí neplatné barvy), overview, list (aktivní i historie), detail, confirm, update s re-key (i kolize → `slot_taken`), cancel (přesun do historie s novým ULID), delete (aktivní i historie, opakované mazání → `not_found`), create (na volný slot i kolize). Typecheck čistý, veřejná strana (`/`, `/reservations`) beze změny po cold restartu.
 
 ## Fáze N3 — Admin shell + Settings view (barvy)
 
@@ -80,3 +81,4 @@ Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako prvn
 - [ ] `NPM_SPEC.md`: aktualizovat zmínky `format: "standard"` → `"native"`; §1 tabulka (distribuční model) — ověřit, že "Trusted, in-process" zdůvodnění platí beze změny (mělo by, native to jen formalizuje, NATIVE_SPEC §1); §4 kontrakt `package.json` přepsat na nový tvar exports/peerDependencies z NATIVE_SPEC §7.
 - [ ] `README.md` (pokud existuje uživatelská dokumentace admin sekce) — aktualizovat popis admin UI (React stránka místo Block Kit formuláře).
 - [ ] Smazat mrtvý kód: cokoliv v `server/admin-ui.ts` pozůstatky, nepoužívané Block Kit importy (`@emdash-cms/blocks` zůstává jako dependency jen pokud se plánuje `fieldWidgets`/`portableTextBlocks` v budoucnu — jinak zvážit odstranění, viz NATIVE_SPEC §7 poznámka).
+- [ ] Smazat `src/poc/` (native POC, N0) a jeho registraci v `astro.config.mjs` (`reservationsNativePoc()`), a `package.json` exports `./poc`, `./poc-runtime`, `./poc-admin` — sloužil jen k živému ověření N0 předpokladů, teď nahrazeno hlavním pluginem.

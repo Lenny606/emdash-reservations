@@ -102,6 +102,10 @@ Implementace zkontrolována sekci po sekci proti SPEC.md — základ odpovídá 
 - `@emdash-cms/blocks` je pinnutá běžná dependency (`0.28.1`) kvůli Block Kit builderům a typům — ve SPEC nefigurovala; rozhodnutí peer vs. bundle se odkládá do NPM_PLAN fáze N2.
 - `plugin:uninstall` maže max 1000 záznamů na kolekci jedním průchodem (bez kurzorové smyčky) — pro objemy dat tohoto pluginu dostačující.
 
+**Nově objevené při native migraci (NATIVE_PLAN N2, 2026-07-18):**
+
+- **`public/availability`'s `PluginRouteError.badRequest` na neplatný `weekStart` je nefunkční** — vždy vrátí `500` místo `400` (viz NATIVE_SPEC N0-11: duplicitní pnpm instance balíčku `emdash`, `instanceof PluginRouteError` selže napříč hranicí plugin/host). V praxi neškodné — `calendar.ts` vždy posílá platný `weekStart` — ale přímé volání API dostane špatný status i zprávu. Neopraveno teď (mimo rozsah N2, pre-existing od zavedení `@emdash-cms/admin` peer dependency pro POC); měl by ho nahradit stejný `{ ok, code, message }` vzor, který teď používají nové admin routy.
+
 ## Navazující práce (samostatné projekty, mimo tento plán)
 
 - **Správa rezervací v adminu** — samostatná specifikace [ADMIN_SPEC.md](./ADMIN_SPEC.md) + plán [ADMIN_PLAN.md](./ADMIN_PLAN.md); rozšiřuje dokončenou fázi 5 (seznam s filtry, detail, editace, mazání, ruční vytváření, storno s notifikací).

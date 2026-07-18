@@ -58,6 +58,22 @@ export async function loadSettings(ctx: PluginContext): Promise<ReservationSetti
 	return settings;
 }
 
+/** Persists a partial settings update (admin API, NATIVE_PLAN N2) and returns the
+ * resulting settings. Only provided keys are written; `activeDays` is joined the same
+ * way `persistDefaultSettings` stores it. */
+export async function saveSettings(ctx: PluginContext, patch: Partial<ReservationSettings>): Promise<ReservationSettings> {
+	const entries = Object.entries(patch) as [keyof ReservationSettings, ReservationSettings[keyof ReservationSettings]][];
+	await Promise.all(
+		entries
+			.filter(([, value]) => value !== undefined)
+			.map(([key, value]) => {
+				const stored = key === "activeDays" ? (value as number[]).join(",") : value;
+				return ctx.kv.set(`settings:${key}`, stored);
+			}),
+	);
+	return loadSettings(ctx);
+}
+
 export async function persistDefaultSettings(ctx: PluginContext): Promise<void> {
 	await Promise.all([
 		ctx.kv.set("settings:enabled", DEFAULT_SETTINGS.enabled),

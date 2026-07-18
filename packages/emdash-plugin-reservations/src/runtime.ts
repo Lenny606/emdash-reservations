@@ -1,5 +1,10 @@
 import { definePlugin, PluginRouteError, type StorageCollection } from "emdash";
 import {
+	AdminListFilterDto,
+	AdminReservationIdDto,
+	AdminReservationUpdateDto,
+	AdminSettingsUpdateDto,
+	AdminUpsertReservationDto,
 	AvailabilityQueryDto,
 	CreateReservationDto,
 	type AvailabilityResponseDto,
@@ -23,6 +28,18 @@ import {
 	verifyCaptchaViaPlugin,
 	verifyCsrfToken,
 } from "./server/security";
+import {
+	cancelReservation,
+	confirmReservation,
+	createReservation,
+	deleteReservation,
+	getOverview,
+	getReservationDetail,
+	getSettings,
+	listReservations,
+	saveSettings,
+	updateReservation,
+} from "./server/admin-api";
 
 // Pojmenovaný export je povinný -- emdash 0.28.1 generuje `import { createPlugin } from entrypoint`
 // (dist/astro/index.mjs:1159). `export default` shodí načtení virtual:emdash/plugins a s ním
@@ -250,6 +267,66 @@ export function createPlugin() {
 						reservationId: reservation.id,
 						slot: toSlotDto(reservation.slotKey, reservation.date, reservation.startTime, status === "pending" ? "pending" : "reserved"),
 					};
+				},
+			},
+
+			// Admin routes (NATIVE_PLAN N2). None are `public: true` -- protected by admin
+			// session + `X-EmDash-Request` header (verified live, NATIVE_SPEC N0-9). All POST,
+			// including reads: GET requests never reach `input:` Zod validation in this emdash
+			// version (N0-10), so a mixed GET/POST admin API would silently misbehave on GET.
+			// Mutation/lookup handlers return `AdminActionResult` (a normal 200 `{ ok, ... }`
+			// payload) instead of throwing `PluginRouteError` -- this workspace's pnpm layout
+			// resolves the plugin's own "emdash" import to a different peer-driven instance
+			// than the host's dispatcher, so `instanceof PluginRouteError` fails across that
+			// boundary and every throw silently degrades to a generic 500 (NATIVE_SPEC N0-11).
+			"admin/settings-get": {
+				handler: async (ctx) => getSettings(ctx),
+			},
+
+			"admin/settings-save": {
+				input: AdminSettingsUpdateDto,
+				handler: async (ctx) => saveSettings(ctx, ctx.input),
+			},
+
+			"admin/overview": {
+				handler: async (ctx) => getOverview(ctx),
+			},
+
+			"admin/reservations-list": {
+				input: AdminListFilterDto,
+				handler: async (ctx) => listReservations(ctx, ctx.input),
+			},
+
+			"admin/reservation-detail": {
+				input: AdminReservationIdDto,
+				handler: async (ctx) => getReservationDetail(ctx, ctx.input.id, ctx.input.fromHistory),
+			},
+
+			"admin/reservation-confirm": {
+				input: AdminReservationIdDto,
+				handler: async (ctx) => confirmReservation(ctx, ctx.input.id),
+			},
+
+			"admin/reservation-cancel": {
+				input: AdminReservationIdDto,
+				handler: async (ctx) => cancelReservation(ctx, ctx.input.id),
+			},
+
+			"admin/reservation-delete": {
+				input: AdminReservationIdDto,
+				handler: async (ctx) => deleteReservation(ctx, ctx.input.id, ctx.input.fromHistory),
+			},
+
+			"admin/reservation-create": {
+				input: AdminUpsertReservationDto,
+				handler: async (ctx) => createReservation(ctx, ctx.input),
+			},
+
+			"admin/reservation-update": {
+				input: AdminReservationUpdateDto,
+				handler: async (ctx) => {
+					const { id, ...dto } = ctx.input;
+					return updateReservation(ctx, id, dto);
 				},
 			},
 		},
