@@ -20,10 +20,18 @@ export function buildSettingsFormBlocks(settings: ReservationSettings): Block[] 
 					max: 365,
 				}),
 				elements.toggle("autoConfirm", "Auto-confirm new reservations", { initialValue: settings.autoConfirm }),
-				elements.textInput("colorFree", "Free slot color", { initialValue: settings.colorFree }),
-				elements.textInput("colorReserved", "Reserved slot color", { initialValue: settings.colorReserved }),
-				elements.textInput("colorPending", "Pending slot color", { initialValue: settings.colorPending }),
-				elements.textInput("colorClosed", "Closed slot color", { initialValue: settings.colorClosed }),
+				elements.textInput("colorFree", `Free slot color (currently ${settings.colorFree})`, {
+					initialValue: settings.colorFree,
+				}),
+				elements.textInput("colorReserved", `Reserved slot color (currently ${settings.colorReserved})`, {
+					initialValue: settings.colorReserved,
+				}),
+				elements.textInput("colorPending", `Pending slot color (currently ${settings.colorPending})`, {
+					initialValue: settings.colorPending,
+				}),
+				elements.textInput("colorClosed", `Closed slot color (currently ${settings.colorClosed})`, {
+					initialValue: settings.colorClosed,
+				}),
 				elements.textInput("captchaPluginId", "Captcha plugin ID (leave empty to disable)", {
 					initialValue: settings.captchaPluginId,
 				}),

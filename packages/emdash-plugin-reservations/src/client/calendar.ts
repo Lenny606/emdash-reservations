@@ -145,13 +145,32 @@ export function initReservationCalendar(root: HTMLElement): void {
 	}
 
 	function renderToolbar(): HTMLElement {
+		// Don't offer weeks that start beyond the booking horizon -- every slot there
+		// would render as closed anyway (YYYY-MM-DD strings compare lexicographically).
+		const nextWeekStart = addDays(state.weekStart, 7);
+		const lastBookableDate = state.data
+			? addDays(new Date().toISOString().slice(0, 10), state.data.config.maxDaysAhead)
+			: null;
+		const nextDisabled = lastBookableDate !== null && nextWeekStart > lastBookableDate;
+
 		const prevBtn = el("button", { type: "button", class: "rsv-button", "aria-label": "Previous week" }, "‹");
 		const todayBtn = el("button", { type: "button", class: "rsv-button" }, "Today");
-		const nextBtn = el("button", { type: "button", class: "rsv-button", "aria-label": "Next week" }, "›");
+		const nextBtn = el(
+			"button",
+			{
+				type: "button",
+				class: "rsv-button",
+				"aria-label": "Next week",
+				disabled: nextDisabled ? "true" : undefined,
+			},
+			"›",
+		);
 
 		prevBtn.addEventListener("click", () => goToWeek(addDays(state.weekStart, -7)));
 		todayBtn.addEventListener("click", () => goToWeek(mondayOf(new Date().toISOString().slice(0, 10))));
-		nextBtn.addEventListener("click", () => goToWeek(addDays(state.weekStart, 7)));
+		if (!nextDisabled) {
+			nextBtn.addEventListener("click", () => goToWeek(nextWeekStart));
+		}
 
 		if (state.data && !state.data.enabled) {
 			return el(

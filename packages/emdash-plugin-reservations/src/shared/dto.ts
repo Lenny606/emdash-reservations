@@ -24,6 +24,7 @@ export const AvailabilityResponseDto = z.object({
 		openingTime: z.string(),
 		closingTime: z.string(),
 		activeDays: z.array(z.number()),
+		maxDaysAhead: z.number(),
 		colors: z.object({
 			free: z.string(),
 			reserved: z.string(),

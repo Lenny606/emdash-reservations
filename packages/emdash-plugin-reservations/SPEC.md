@@ -40,6 +40,8 @@ packages/emdash-plugin-reservations/
 ├── tsconfig.json
 ├── SPEC.md                       # tento dokument
 ├── PLAN.md                       # implementační plán
+├── ADMIN_SPEC.md                 # specifikace správy rezervací v administraci (nahrazuje §6 Admin stránka)
+├── ADMIN_PLAN.md                 # implementační plán správy rezervací (realizuje ADMIN_SPEC.md)
 ├── NPM_SPEC.md                   # specifikace distribuce jako npm balíček
 └── NPM_PLAN.md                   # implementační plán npm distribuce (realizuje NPM_SPEC.md)
 ```
@@ -162,10 +164,8 @@ Defaults se persistují v `plugin:install` (schema defaults jsou jen UI defaults
 ### Admin stránka (Block Kit, routa `admin`)
 
 - `adminPages: [{ path: "/reservations", label: "Rezervace", icon: "calendar" }]`
-- **Přehled:** `stats` blok (rezervace tento týden, čekající, celkem).
-- **Tabulka rezervací:** datum/čas, jméno, e-mail, status (`badge`), vytvořeno (`relative_time`); filtr dle statusu; stránkování kurzorem.
-- **Akce na řádku:** Potvrdit (`pending → confirmed`), Zrušit (s potvrzovacím dialogem; přesun do `reservations_history`).
-- Nastavení řeší nativní `settingsSchema` formulář — v Block Kit stránce se neduplikuje.
+- Základní verze (implementovaná ve fázi 5): `stats` přehled, read-only tabulka, pending seznam s akcemi Confirm/Cancel.
+- **Plnohodnotná správa rezervací** — seznam s filtry, detail, editace, mazání, ruční vytváření, storno s automatickou notifikací — je specifikovaná samostatně v [ADMIN_SPEC.md](./ADMIN_SPEC.md), který tuto sekci nahrazuje.
 
 ## 7. E-mail notifikace (příprava)
 

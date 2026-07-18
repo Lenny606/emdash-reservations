@@ -85,8 +85,26 @@ SPEC.md §1, §3, §4, §6, §8 aktualizovány dle těchto zjištění.
 - [ ] Průchod celkovým flow end-to-end (čerstvá DB → seed → rezervace) — **neprovedeno mnou**, uživatel testuje sám. Ověřeno mnou: `pnpm install`, čistá DB start (Fáze 2), `tsc --noEmit` na balíčku (0 chyb kromě `.astro` importu, což je limitace holého `tsc` bez Astro pluginu — `astro check` na celém webu ho vidí a projde), `astro check` na webu (13 souborů, 0 chyb).
 - [x] Aktualizace kořenového `AGENTS.md`/`CLAUDE.md` (nová stránka `/reservations`, plugin v přehledu).
 
+## Kontrola implementace proti SPEC (2026-07-18)
+
+Implementace zkontrolována sekci po sekci proti SPEC.md — základ odpovídá specifikaci (architektura, datový model, pipeline `public/reserve` včetně pořadí kroků, bezpečnostní mechanismy, kalendář, admin, notifikační šev, capabilities). Nalezené odchylky:
+
+**Opravené při kontrole:**
+
+- [x] **Rate-limit KV buckety se neuklízely** (SPEC §4 slibuje best-effort úklid, riziko #3) — doplněn `sweepStaleRateLimitBuckets` v `security.ts`: max jednou za hodinu (gate přes KV `state:rlSweepAt`) projde `state:rl:*` a smaže buckety starší než aktuální minutové/hodinové okno; volá se fire-and-forget z `checkRateLimit`, chyby jen loguje.
+- [x] **`maxDaysAhead` se nevynucoval v availability ani na klientu** (SPEC §5 „navigace týdnů s limitem `maxDaysAhead`") — server teď sloty za horizontem označuje `closed` (stejný výpočet horizontu jako `validateReservationRequest`), do `AvailabilityResponseDto.config` přibylo `maxDaysAhead` a klient deaktivuje tlačítko „›", když už další týden začíná za horizontem.
+
+**Vědomé odchylky (ponechané záměrně):**
+
+- Rate-limit limity (5/min, 20/h) jsou konstanta `RESERVE_RATE_LIMIT`, ne nastavení (SPEC §3 říkala „limit z nastavení") — konfigurovatelnost se případně doplní spolu s rozšířením admin nastavení.
+- Availability při `enabled: false` vrací plnou mřížku `closed` slotů + pole `enabled` (nad rámec DTO ve SPEC §2) místo samostatné „disabled" odpovědi — klient tak umí vykreslit mřížku i hlášku o nedostupnosti.
+- E-mailové šablony v `notifications.ts` jsou česky, přestože fáze 4 deklaruje veškerý text anglicky — jdou správci (`notifyEmail`), ne návštěvníkům; sjednotí se při rozšíření notifikací (ADMIN_PLAN fáze A5 šablony stejně přepisuje).
+- `@emdash-cms/blocks` je pinnutá běžná dependency (`0.28.1`) kvůli Block Kit builderům a typům — ve SPEC nefigurovala; rozhodnutí peer vs. bundle se odkládá do NPM_PLAN fáze N2.
+- `plugin:uninstall` maže max 1000 záznamů na kolekci jedním průchodem (bez kurzorové smyčky) — pro objemy dat tohoto pluginu dostačující.
+
 ## Navazující práce (samostatné projekty, mimo tento plán)
 
+- **Správa rezervací v adminu** — samostatná specifikace [ADMIN_SPEC.md](./ADMIN_SPEC.md) + plán [ADMIN_PLAN.md](./ADMIN_PLAN.md); rozšiřuje dokončenou fázi 5 (seznam s filtry, detail, editace, mazání, ruční vytváření, storno s notifikací).
 - **Distribuce jako npm balíček** — samostatná specifikace [NPM_SPEC.md](./NPM_SPEC.md) + plán [NPM_PLAN.md](./NPM_PLAN.md); startuje až po dokončení fází 1–7.
 - **Captcha plugin** — vlastní balíček s vlastním nastavením (provider, klíče, widget). Musí naplnit kontrakt ze SPEC §10 (verify routa, widget do `data-rsv-captcha` slotu, zápis tokenu). Rezervační plugin je na něj připravený bez dalších změn kódu.
 - **E-mail transport plugin** — provider s `email:deliver` hookem (např. Resend); po instalaci začnou fungovat notifikace z fáze 6.

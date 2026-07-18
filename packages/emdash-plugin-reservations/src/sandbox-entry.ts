@@ -108,6 +108,10 @@ export default {
 				const settings = await loadSettings(ctx);
 				const now = new Date();
 				const weekEnd = addDays(weekStart, 6);
+				// Same horizon computation as validateReservationRequest, so slots the server
+				// would reject as beyond_max_days_ahead never render as bookable.
+				const maxDate = new Date(now);
+				maxDate.setDate(maxDate.getDate() + settings.maxDaysAhead);
 
 				const reservationsCollection = ctx.storage.reservations as StorageCollection<Reservation>;
 				const weekReservations = await reservationsCollection.query({
@@ -125,6 +129,8 @@ export default {
 						const slotDateTime = new Date(`${slot.date}T${slot.startTime}:00`);
 						if (slotDateTime.getTime() < now.getTime()) {
 							status = "past";
+						} else if (slotDateTime.getTime() > maxDate.getTime()) {
+							status = "closed";
 						} else {
 							const reservation = bySlotKey.get(slot.slotKey);
 							status = reservation ? (reservation.status === "pending" ? "pending" : "reserved") : "free";
@@ -146,6 +152,7 @@ export default {
 						openingTime: settings.openingTime,
 						closingTime: settings.closingTime,
 						activeDays: settings.activeDays,
+						maxDaysAhead: settings.maxDaysAhead,
 						colors: {
 							free: settings.colorFree,
 							reserved: settings.colorReserved,

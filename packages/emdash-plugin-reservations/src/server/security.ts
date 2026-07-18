@@ -97,13 +97,45 @@ export interface RateLimitResult {
 
 export const RESERVE_RATE_LIMIT = { perMinute: 5, perHour: 20 };
 
-/** Per-IP minute + hour bucket counters in KV. Best-effort cleanup: buckets carry the
- * time window in their key, so stale ones just age out without needing a sweep job. */
+const RL_PREFIX = "state:rl:";
+const RL_SWEEP_AT_KEY = "state:rlSweepAt";
+const RL_SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+
+/** Best-effort removal of expired rate-limit buckets. KV has no TTL, so without this the
+ * `state:rl:*` keys would accumulate forever. Bucket keys embed their time window --
+ * anything older than the current minute/hour window is dead weight. Runs at most once
+ * per hour (gated via KV timestamp) and never throws. */
+export async function sweepStaleRateLimitBuckets(ctx: PluginContext): Promise<void> {
+	try {
+		const now = Date.now();
+		const lastSweep = (await ctx.kv.get<number>(RL_SWEEP_AT_KEY)) ?? 0;
+		if (now - lastSweep < RL_SWEEP_INTERVAL_MS) return;
+		await ctx.kv.set(RL_SWEEP_AT_KEY, now);
+
+		const minuteBucket = Math.floor(now / 60_000);
+		const hourBucket = Math.floor(now / 3_600_000);
+		for (const entry of await ctx.kv.list(RL_PREFIX)) {
+			const parts = entry.key.split(":");
+			const kind = parts[parts.length - 2];
+			const bucket = Number(parts[parts.length - 1]);
+			if (!Number.isFinite(bucket)) continue;
+			const stale = (kind === "m" && bucket < minuteBucket) || (kind === "h" && bucket < hourBucket);
+			if (stale) await ctx.kv.delete(entry.key);
+		}
+	} catch (error) {
+		ctx.log.warn("reservations: rate-limit bucket sweep failed", { error: String(error) });
+	}
+}
+
+/** Per-IP minute + hour bucket counters in KV. Stale buckets are removed by the
+ * hourly best-effort sweep kicked off (fire-and-forget) on each check. */
 export async function checkRateLimit(
 	ctx: PluginContext,
 	ipHash: string,
 	limits: { perMinute: number; perHour: number },
 ): Promise<RateLimitResult> {
+	void sweepStaleRateLimitBuckets(ctx);
+
 	const now = Date.now();
 	const minuteBucket = Math.floor(now / 60_000);
 	const hourBucket = Math.floor(now / 3_600_000);
