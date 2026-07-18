@@ -60,6 +60,18 @@ export function createPlugin() {
 				indexes: ["date", "status", "email", "createdAt"],
 			},
 		},
+		// Duplicated from src/index.ts's descriptor (NATIVE_SPEC NT-4) -- the descriptor's
+		// `adminEntry`/`adminPages` control the build-time module load (confirmed working:
+		// the page renders on direct navigation), but the *client-visible* manifest
+		// (`/_emdash/api/manifest`, `plugins.<id>.adminMode`/`adminPages` -- what the admin
+		// sidebar reads to decide whether to show a nav link) is computed from `plugin.admin`
+		// on the *resolved* plugin (`emdash-runtime.ts`: `hasAdminEntry = !!plugin.admin?.entry`).
+		// Omitting this field left `adminMode: "none"` -- the page worked but had no nav entry
+		// anywhere, so it was undiscoverable without knowing the raw URL.
+		admin: {
+			entry: "@emdash-reservations/plugin-reservations/admin",
+			pages: [{ path: "/reservations", label: "Reservations", icon: "calendar" }],
+		},
 
 		hooks: {
 			"plugin:install": {

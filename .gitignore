@@ -12,3 +12,4 @@ data.db-wal
 !.env.example
 
 .idea
+.playwright-mcp

@@ -23,6 +23,7 @@ NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) byly ověřené jen staticky (typy v `.
 - [x] Smazána `admin` routa ze `runtime.ts` a `buildAdminPageBlocks`/`saveSettingsFromForm`/`confirmReservation`/`cancelReservation` — přesunou se a přepíšou v N2/N6 do `server/admin-api.ts`. `server/admin-ui.ts` (Block Kit block buildery) zůstává v repu nepoužité až do smazání v N3.
 - [x] **Odchylka od plánu (bezpečnostní opatření):** `src/admin/index.tsx` vytvořen už teď jako minimální placeholder (`export const pages = { "/reservations": () => <div>...</div> }`), ne až v N3. Důvod: `adminEntry` v descriptoru odkazuje na modul, který musí existovat, jinak hrozí stejný typ pádu celého webu jako u POC nálezu N0-8 (tentokrát by šlo o nenalezitelný import místo špatného tvaru exportu, ale riziko je stejné — ověřeno, že modul musí reálně existovat). N3 tento placeholder nahradí skutečným obsahem, needeleguje se nic navíc.
 - [x] **Ověření:** `npx astro dev` (background) startuje bez chyb; `pnpm exec astro check` 0 chyb/varování/hints; `/reservations` funguje beze změny (Playwright: procházení týdnů, výběr slotu, odeslání rezervace → "Your reservation request has been sent", slot se zobrazí jako obsazený); `/_emdash/admin/plugins/reservations/reservations` vykreslí placeholder React stránku bez pádu webu (ověřeno přes dev-bypass + Playwright snapshot, 0 console errors).
+- [x] **Dodatečná oprava po N3 (2026-07-18, N0-12):** uživatel nahlásil, že stránku v adminu "nevidí" -- ukázalo se, že `definePlugin()` v `runtime.ts` chyběl `admin: { entry, pages }` (NT-4 duplikace s descriptorem, kterou si tehdy hlídat měl krok "explicitní diff-check", ale prakticky proveden nebyl). Bez něj byl klientský manifest `adminMode: "none"` -- stránka fungovala na přímou URL, ale sidebar na ni neměl žádný odkaz. Doplněno, ověřeno (`adminMode: "react"`, sidebar má "Plugins → Reservations", proklik funguje).
 
 ## Fáze N2 — Admin API vrstva (server, bez UI) ✅ (2026-07-18)
 
@@ -35,17 +36,18 @@ NATIVE_SPEC §2 a §9 (NT-1, NT-2, NT-3) byly ověřené jen staticky (typy v `.
 - [x] **Zásadní nález (N0-11, viz NATIVE_SPEC §2):** `throw PluginRouteError` z routy tohoto pluginu nikdy neprojde jako svůj HTTP status — vždy `500`, protože plugin balíček resolvuje `emdash` do jiné pnpm peer-instance než hostitelský dispatcher (`instanceof` napříč hranicí selže). Objeveno při ručním testu kolize slotu. **Oprava:** admin routy vrací `AdminActionResult<T>` (`{ ok, data } \| { ok:false, code, message }`) jako normální `200` odpověď, stejný vzor jako `public/reserve`. `public/availability`'s dva pre-existing throwy zůstávají zatím nedotčené (mimo rozsah N2, zapsáno jako odchylka v PLAN.md).
 - [x] **Ověření:** kompletní cyklus přes `curl` s admin session cookie + `X-EmDash-Request` header — settings-get/save (vč. Zod odmítnutí neplatné barvy), overview, list (aktivní i historie), detail, confirm, update s re-key (i kolize → `slot_taken`), cancel (přesun do historie s novým ULID), delete (aktivní i historie, opakované mazání → `not_found`), create (na volný slot i kolize). Typecheck čistý, veřejná strana (`/`, `/reservations`) beze změny po cold restartu.
 
-## Fáze N3 — Admin shell + Settings view (barvy)
+## Fáze N3 — Admin shell + Settings view (barvy) ✅ (2026-07-18)
 
 Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako první viditelný výstup.
 
-- [ ] `src/admin/index.tsx` — nahradit N1 placeholder skutečným `export const pages = { "/reservations": ReservationsAdminPage }`.
-- [ ] `src/admin/ReservationsAdminPage.tsx` — kostra s `useState` view-routerem (NATIVE_SPEC §5.2), zatím jen `"settings"` view aktivní, ostatní placeholder.
-- [ ] `src/admin/api.ts` — typovaný fetch wrapper nad `admin/*` routami (base URL ověřená v N0), Zod parse odpovědí, jednotné chybové zpracování (toast přes Kumo `toast`).
-- [ ] `src/admin/components/ColorField.tsx` — dle NATIVE_SPEC §5.3.
-- [ ] `src/admin/views/SettingsView.tsx` — formulář nastavení (enabled toggle, opening/closing time, active days, maxDaysAhead, autoConfirm, 4× `ColorField`, captchaPluginId, notifyEnabled, notifyEmail) — Kumo `Input`/`Switch`/`Select` + `Button` submit → `admin/settings-save`.
-- [ ] Smazat `server/admin-ui.ts` (Block Kit block buildery, teď nepoužívané — settings část nahrazena, zbytek mizí v N4/N5).
-- [ ] **Ověření (uživatel testuje sám dle feedback preference):** `/_emdash/admin/plugins/reservations/reservations` zobrazí formulář nastavení, změna barvy v color pickeru se okamžitě promítne do náhledu, uložení projeví změnu na `/reservations` po refresh.
+- [x] `src/admin/index.tsx` — nahrazen N1 placeholder skutečným `export const pages = { "/reservations": ReservationsAdminPage }`.
+- [x] `src/admin/ReservationsAdminPage.tsx` — kostra s `useState<View>` view-routerem (NATIVE_SPEC §5.2), nav (Kumo `Button`) mezi `list`/`create`/`settings`; jen `"settings"` je reálný view, ostatní dva render `ComingSoon` placeholder (N4/N5).
+- [x] `src/admin/api.ts` — typovaný fetch wrapper nad `admin/*` routami přes `apiFetch`+`parseApiResponse` z `@emdash-cms/admin`.
+- [x] `src/admin/components/ColorField.tsx` — dle NATIVE_SPEC §5.3, přesně jak spec navrhovala (bare `<input type="color">` + Kumo `Input`).
+- [x] `src/admin/views/SettingsView.tsx` — formulář nastavení (enabled `Switch`, opening/closing `Input type="time"`, 7× den `Checkbox`, maxDaysAhead `Input type="number"`, autoConfirm `Switch`, 4× `ColorField`, captchaPluginId/notifyEmail `Input`, notifyEnabled `Switch`) + `Button` submit → `admin/settings-save`.
+- [x] Smazán `server/admin-ui.ts` (Block Kit block buildery, nepoužívané od N1).
+- [x] **Odchylky od plánu (drobné, implementační):** (1) Aktivní dny jako 7× `Checkbox` (Mon–Sun) místo `Select` s `multiple` — jasnější UX pro týdenní rozvrh, jednodušší na implementaci než ověřovat Select's multi-value kontrakt. (2) Chybové/úspěšné hlášení přes Kumo `Banner` inline ve formuláři, ne `toast` — nebylo ověřené, že host poskytuje `ToastProvider` kontext (POC ho netestoval), `Banner` nepotřebuje žádný kontext. (3) `admin/api.ts` nepoužívá Zod na parsování odpovědí (jen `import type` z `shared/dto.ts`) — sjednoceno se stávající konvencí `client/api-client.ts`, které taky Zod na klientu nepoužívá.
+- [x] **Ověření (Playwright, live):** stránka vykreslí formulář se všemi Kumo komponentami stylovanými shodně se zbytkem adminu (screenshot); úprava hex textového pole u „Free" okamžitě mění `value` sousedního `<input type="color">` (ověřeno přes `evaluate`); uložení zobrazí „Saved" banner; po přechodu na `/reservations` je nová barva vidět v `--rsv-free` CSS proměnné (ověřeno `getComputedStyle`) — kompletní round-trip admin → server → veřejná stránka. 0 console chyb, server log bez chyb, typecheck čistý. Testovací barva vrácena zpět na výchozí `#22c55e`.
 
 ## Fáze N4 — Seznam + Detail
 
