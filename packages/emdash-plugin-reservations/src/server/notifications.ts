@@ -49,6 +49,21 @@ export function renderReservationConfirmedEmail(reservation: Reservation): Email
 	};
 }
 
+/** Customer-facing (English) -- sent on Storno (ADMIN_SPEC §5/§6). Distinct from
+ * `renderStatusChangeEmail` above (admin-facing, Czech, generic status-change text): the
+ * customer gets a dedicated, clearer "this is cancelled" message. */
+export function renderCancellationEmail(reservation: Reservation): EmailTemplate {
+	return {
+		subject: `Reservation cancelled: ${reservation.date} ${reservation.startTime}`,
+		text: [
+			`Hi ${reservation.name},`,
+			"",
+			`Your reservation for ${reservation.date} at ${reservation.startTime} has been cancelled.`,
+			"If this wasn't expected, please get in touch and we'll help sort it out.",
+		].join("\n"),
+	};
+}
+
 async function sendIfConfigured(ctx: PluginContext, settings: ReservationSettings, template: EmailTemplate): Promise<void> {
 	if (!settings.notifyEnabled || !settings.notifyEmail) {
 		ctx.log.info("reservations: notifications disabled or no notifyEmail set, skipping");
@@ -99,4 +114,11 @@ export function notifyStatusChange(ctx: PluginContext, settings: ReservationSett
  * reservation they just created themselves). */
 export function notifyCustomerReservationConfirmed(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation): void {
 	void sendToCustomer(ctx, settings, reservation, renderReservationConfirmedEmail(reservation));
+}
+
+/** Storno (ADMIN_SPEC §5/§6) -- fire-and-forget, same pattern as the other `notify*`
+ * functions. `reservation` here is the record as moved into history (status already
+ * "cancelled"), matching what `cancelReservation` in `admin-api.ts` has on hand. */
+export function notifyCancellation(ctx: PluginContext, settings: ReservationSettings, reservation: Reservation): void {
+	void sendToCustomer(ctx, settings, reservation, renderCancellationEmail(reservation));
 }

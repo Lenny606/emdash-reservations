@@ -12,7 +12,7 @@ import type {
 import { addDays, makeSlotKey, mondayOf } from "../shared/slots";
 import type { Reservation, ReservationSettings } from "./model";
 import { loadSettings, saveSettings as persistSettings } from "./settings";
-import { notifyCustomerReservationConfirmed, notifyStatusChange } from "./notifications";
+import { notifyCancellation, notifyCustomerReservationConfirmed, notifyStatusChange } from "./notifications";
 import { sanitizeAdminUpsert, validateReservationRequest } from "./validation";
 
 type WhereClause = NonNullable<QueryOptions["where"]>;
@@ -130,9 +130,8 @@ export async function confirmReservation(ctx: PluginContext, id: string): Promis
 }
 
 /** Moves an active reservation to history as cancelled. Mechanics carried over unchanged
- * from the Block Kit admin (PLAN.md phase 5). Deliberately **no** customer notification
- * yet -- ADMIN_SPEC §5/§6 wants a dedicated `notifyCancellation` template, added in
- * NATIVE_PLAN N6 alongside the rest of the customer-facing notification rework. */
+ * from the Block Kit admin (PLAN.md phase 5); customer notification added in NATIVE_PLAN N6
+ * (ADMIN_SPEC §5/§6). */
 export async function cancelReservation(ctx: PluginContext, id: string): Promise<AdminActionResult<AdminReservationDetailDto>> {
 	const existing = await reservations(ctx).get(id);
 	if (!existing) return fail("not_found", "Reservation not found");
@@ -142,6 +141,8 @@ export async function cancelReservation(ctx: PluginContext, id: string): Promise
 	await history(ctx).put(historyId, cancelled);
 	await reservations(ctx).delete(id);
 
+	const settings = await loadSettings(ctx);
+	notifyCancellation(ctx, settings, cancelled);
 	ctx.log.info("reservations: admin cancelled reservation", { id, historyId });
 	return ok(toAdminDetailDto(historyId, cancelled, true));
 }

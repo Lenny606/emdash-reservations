@@ -67,13 +67,13 @@ Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako prvn
 - [x] Notifikace při ručním vytvoření: nová `notifyCustomerReservationConfirmed` (anglická šablona `renderReservationConfirmedEmail`, na rozdíl od českých admin-facing šablon) **nahrazuje** `notifyNewReservation` pro tuto jednu cestu (admin nepotřebuje být upozorněn na rezervaci, kterou právě sám vytvořil) — `notifyEnabled` guard, bez nutnosti `notifyEmail` (cíl je vždy `reservation.email`).
 - [x] **Ověření (Playwright + curl, live):** vytvoření nové rezervace → rovnou detail; Edit s prefillem všech polí; přesun na volný slot (re-key, `createdAt` zachováno, `updatedAt` změněno); kolize při přesunu na obsazený slot → banner "That slot is already booked", **ověřeno přes API, že ani přesouvaný, ani cílový záznam se nezměnily**; ruční vytvoření na slot +100 dní dopředu **a** při `enabled: false` úspěšné (obchází `maxDaysAhead`/`enabled` dle ADMIN_SPEC §5), veřejná strana pro stejný týden zůstává korektně celá `closed`. Log potvrzuje `notifyCustomerReservationConfirmed` volání (no-op, `notifyEnabled` je defaultně false). Typecheck čistý, 0 console chyb.
 
-## Fáze N6 — Smazání + Storno s notifikací
+## Fáze N6 — Smazání + Storno s notifikací ✅ (2026-07-19)
 
-- [ ] `admin/reservation-delete` napojit na `DetailView` (Smazat, s `ConfirmButton`) — tvrdý delete z aktivních i historie.
-- [ ] `server/notifications.ts`: `notifyCancellation(ctx, r)` + `renderCancellationEmail(r)` čistá šablona (ADMIN_SPEC §6); pokud v projektu ještě není vitest (PLAN fáze 6 poznámka), zavést pro šablony (`renderCancellationEmail`, `renderConfirmationEmail`) — čisté funkce, snadno testovatelné bez `ctx`.
-- [ ] `admin/reservation-cancel` doplnit o volání `notifyCancellation` (fire-and-forget, stejný vzor jako `notifyStatusChange`).
-- [ ] Napojit Storno tlačítko v `DetailView` s `ConfirmButton`.
-- [ ] **Ověření:** storno pending i confirmed rezervace — slot se v kalendáři okamžitě uvolní, záznam v historii, log obsahuje pokus o notifikaci; opakované storno stejného id ⇒ chybový banner.
+- [x] `admin/reservation-delete` napojen na `DetailView` (Smazat, s `ConfirmButton`) — tvrdý delete z aktivních i historie. (Hotovo už v N4 — mazání a storno mechanika vznikly společně s `DetailView`; N6 dodal jen chybějící notifikaci.)
+- [x] `server/notifications.ts`: `notifyCancellation(ctx, r)` + `renderCancellationEmail(r)` čistá šablona (anglická, zákaznická — ADMIN_SPEC §6). Vitest nebyl v projektu nastavený (PLAN fáze 6 poznámka) — zaveden teď (`vitest.config.ts`, `devDependency`, `pnpm test` skript v balíčku) a napsán `notifications.test.ts` pokrývající všechny 4 šablonové funkce (`renderNewReservationEmail`, `renderStatusChangeEmail`, `renderReservationConfirmedEmail` z N5, `renderCancellationEmail`) — 6 testů, čisté funkce bez `ctx`.
+- [x] `admin/reservation-cancel` (přesněji `cancelReservation` v `admin-api.ts`) doplněn o volání `notifyCancellation` (fire-and-forget, stejný vzor jako `notifyStatusChange`).
+- [x] Storno tlačítko v `DetailView` s `ConfirmButton` — hotovo v N4.
+- [x] **Ověření:** storno pending i confirmed rezervace přes `curl` — slot se v kalendáři okamžitě uvolní (ověřeno `public/availability`, oba sloty zpět `free`), záznam v historii pod novým ULID; log obsahuje skutečný pokus o notifikaci (`notifyEnabled:false` → "skipping customer email"; `notifyEnabled:true` → emdash dev-mode e-mail stub `📧 [dev-email] Email sent` vypíše kompletní vyrenderovaný e-mail se správným předmětem/textem); opakované storno stejného id ⇒ `{ok:false, code:"not_found"}` (v UI se zobrazí jako banner přes `DetailView`'s `onError`). Vitest 6/6 passed, typecheck čistý, testovací data uklizena.
 
 ## Fáze N7 — Průchod celku a úklid dokumentace
 
