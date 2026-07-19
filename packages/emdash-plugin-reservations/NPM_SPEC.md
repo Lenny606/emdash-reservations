@@ -8,8 +8,8 @@ Specifikace distribuce rezervačního pluginu ([SPEC.md](./SPEC.md)) jako samost
 
 | Rozhodnutí | Volba | Zdůvodnění |
 | --- | --- | --- |
-| Kanál | **Veřejný npm registry** | Standardní cesta pro config-based EmDash pluginy (docs: „Distributing native plugins" — platí i pro standard formát registrovaný v `plugins: []`). |
-| Režim u uživatele | **Trusted, in-process** (`plugins: []`) | Plugin vyžaduje: (a) `.astro` komponentu — distribuuje se jen přes npm, ne marketplace; (b) same-origin `fetch` pro delegovaný captcha verify — sandbox blokuje síť mimo `ctx.http`. README to musí říkat explicitně. |
+| Kanál | **Veřejný npm registry** | Standardní cesta pro config-based EmDash pluginy (docs: „Distributing native plugins"). |
+| Režim u uživatele | **Trusted, in-process** (`plugins: []`) | Od NATIVE_PLAN N1 plugin běží ve `format: "native"` — tenhle režim teď není jen doporučený, ale **technicky vynucený**: `PluginDescriptor.format: "native"` smí běžet jen v `plugins: []`, nemůže do `sandboxed: []` ani na marketplace (NATIVE_SPEC §1). Původní důvody (`.astro` komponenta, same-origin captcha `fetch`) platí beze změny a jsou teď jen jeden z několika argumentů, ne jediný. |
 | Marketplace | **Mimo rozsah** (viz §8) | Vyžadoval by změnu architektury, ne jen přebalení. |
 | Vývojové prostředí | Tento repozitář zůstává na `workspace:*` | Web v tomto repu je testbed pluginu; publikovaná verze se ověřuje v čistém projektu mimo workspace (NPM_PLAN fáze N4). |
 
@@ -30,10 +30,11 @@ Klíčové architektonické rozhodnutí distribuce — balíček má **dvě pova
 
 | Část | Distribuce | Důvod |
 | --- | --- | --- |
-| `src/index.ts` (descriptor), `src/sandbox-entry.ts` (+ jejich importy ze `server/`, `shared/`) | **Kompilované ESM + `.d.ts` v `dist/`** (tsdown) | Server kód; uživatelův bundler ho nemá kompilovat z TS zdroje |
+| `src/index.ts` (descriptor), `src/runtime.ts` (+ jejich importy ze `server/`, `shared/`) | **Kompilované ESM + `.d.ts` v `dist/`** (tsdown) | Server kód; uživatelův bundler ho nemá kompilovat z TS zdroje |
 | `src/components/*.astro` | **Zdroj** | Astro konzumuje `.astro` soubory přímo, bez buildu (stejný mechanismus jako `componentsEntry` u native pluginů) |
 | `src/client/*.ts`, `src/shared/*.ts` | **Zdroj** | Importuje je `<script>` v `.astro` komponentě — kompiluje je Vite uživatelova webu. `shared/` musí být ve zdroji, protože klient z něj bere DTO typy (server verze téhož kódu je zabalená v `dist/`) |
-| SPEC.md, PLAN.md, NPM_SPEC.md, NPM_PLAN.md, testy | **Nebalí se** | Interní dokumenty; uživatel dostává `README.md` |
+| `src/admin/**/*.tsx` (React admin, `adminEntry`) | **Otevřené — mimo rozsah tohoto dokumentu** | Přibylo s NATIVE_PLAN N1-N6, po sepsání této specifikace. Vyžaduje vlastní rozhodnutí (kompilovat do `dist/` jako server kód, nebo distribuovat jako zdroj podobně jako `.astro` komponenta — admin běží v hostitelově React/Vite stromu, ne izolovaně) — dořeší NPM_PLAN, až se distribuce reálně naplánuje. |
+| SPEC.md, PLAN.md, NATIVE_SPEC.md, NATIVE_PLAN.md, NPM_SPEC.md, NPM_PLAN.md, testy | **Nebalí se** | Interní dokumenty; uživatel dostává `README.md` |
 
 Omezení z toho plynoucí:
 
@@ -46,22 +47,26 @@ Omezení z toho plynoucí:
 ```jsonc
 {
 	"name": "<dle §2.1>",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"type": "module",
 	"license": "<dle §2.2>",
-	"description": "Weekly reservation calendar plugin for EmDash CMS (7 days × 30min slots).",
+	"description": "Weekly reservation calendar plugin for EmDash CMS (7 days × 30min slots) with a native React admin.",
 	"keywords": ["emdash", "emdash-plugin", "reservations", "booking", "astro"],
 	"exports": {
 		".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-		"./sandbox": { "types": "./dist/sandbox-entry.d.ts", "import": "./dist/sandbox-entry.js" },
+		"./runtime": { "types": "./dist/runtime.d.ts", "import": "./dist/runtime.js" },
+		"./admin": "<TBD -- distribuční strategie ještě nerozhodnutá, viz §3>",
 		"./components": "./src/components/index.ts" // zdroj — záměrně, viz §3
 	},
-	"files": ["dist", "src/components", "src/client", "src/shared", "README.md"],
+	"files": ["dist", "src/components", "src/client", "src/shared", "README.md"], // src/admin přibude, viz §3
 	"sideEffects": false,
 	"engines": { "node": ">=20" }, // Web Crypto + fetch globálně
 	"peerDependencies": {
 		"emdash": ">=0.28.1 <0.29.0", // viz §5
-		"astro": "^7.0.0"
+		"astro": "^7.0.0",
+		"react": "^19.0.0", // nové s native adminem (NATIVE_PLAN N1) -- admin běží v hostitelově React stromu
+		"react-dom": "^19.0.0", // nové
+		"@cloudflare/kumo": "2.6.0" // nové, přesně pinned -- interní design systém hostitelského adminu, ne stabilní veřejné API; stejné zdůvodnění jako úzký emdash rozsah v §5
 	},
 	"scripts": {
 		"build": "tsdown",
@@ -70,11 +75,11 @@ Omezení z toho plynoucí:
 }
 ```
 
-Žádný React (klient je vanilla TS), žádné runtime dependencies (Zod přes `astro/zod`, viz §2.4).
+Klient (`src/client/*.ts`) zůstává vanilla TS, žádné runtime dependencies tam (Zod přes `astro/zod`, viz §2.4) — React/Kumo peery jsou nové výhradně kvůli admin bundlu (`src/admin/**`), ne kvůli veřejné straně.
 
 ## 5. Kompatibilita a verzování
 
-- **Peer rozsah emdash je záměrně úzký: `>=0.28.1 <0.29.0`.** Plugin staví na interním tvaru API ověřeném reverse-engineeringem `node_modules` (PLAN fáze 0): holý sandbox export `satisfies SandboxedPlugin` z `"emdash/plugin"`, dvouargumentové routy s přenositelným `request` záznamem, `ctx.url()`. Dokumentace popisuje novější, odlišné API — tvar se mezi verzemi mění. Široký rozsah by u uživatelů rozbíjel plugin při minor updatech emdash.
+- **Peer rozsah emdash je záměrně úzký: `>=0.28.1 <0.29.0`.** Plugin staví na interním tvaru API ověřeném reverse-engineeringem `node_modules` (PLAN fáze 0, NATIVE_SPEC §2): `format: "native"` + pojmenovaný `export function createPlugin()` vracející `definePlugin({...})` z `"emdash"` (**ne** `export default` — shodí celý web, NATIVE_SPEC N0-8), jednoargumentové routy (`RouteContext<TInput>`), admin manifest (`adminMode`) čtený z `definePlugin()`'s `admin: { entry, pages }`, ne z descriptoru (NATIVE_SPEC N0-12). Dokumentace popisuje novější, odlišné API — tvar se mezi verzemi mění. Široký rozsah by u uživatelů rozbíjel plugin při minor updatech emdash.
 - **Rozšíření rozsahu = re-verifikace.** Každá nová podporovaná verze emdash projde plnou verifikací mimo workspace (NPM_PLAN N4) a zvedne minor verzi balíčku.
 - **Verzování balíčku:** semver; `0.x` dokud je peer rozsah takto svázaný. `CHANGELOG.md` (ručně, changesets až s CI).
 - **README musí kompatibilitu uvádět viditelně** — podporovaný rozsah emdash a fakt, že plugin je trusted-only.
@@ -85,7 +90,7 @@ Povinný obsah — jediný dokument, který uživatel dostane:
 
 1. Instalace a registrace (`npm install`, `plugins: [reservationsPlugin()]`, trusted-only poznámka).
 2. Setup stránky: import `ReservationCalendar` z `<name>/components`, příklad stránky včetně `Astro.cache.set`.
-3. Konfigurace: tabulka všech `settings:*` klíčů (SPEC §6) + kde je najít v adminu (Block Kit stránka).
+3. Konfigurace: tabulka všech `settings:*` klíčů (SPEC §6) + kde je najít v adminu (React stránka „Reservations" v sidebaru pod „Plugins").
 4. Integrační kontrakty: captcha plugin (SPEC §10) a e-mail transport — co nainstalovat, aby se funkce aktivovaly; fail-closed chování captchy.
 5. Bezpečnostní model: co CSRF/honeypot/rate-limit chrání a nechrání (PLAN riziko #4).
 6. Kompatibilita (§5) a changelog.

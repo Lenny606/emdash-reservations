@@ -4,7 +4,6 @@ import { defineConfig } from "astro/config";
 import emdash, { local } from "emdash/astro";
 import { sqlite } from "emdash/db";
 import { reservationsPlugin } from "@emdash-reservations/plugin-reservations";
-import { reservationsNativePoc } from "@emdash-reservations/plugin-reservations/poc";
 
 export default defineConfig({
 	output: "server",
@@ -23,7 +22,7 @@ export default defineConfig({
 				directory: "./uploads",
 				baseUrl: "/_emdash/api/media/file",
 			}),
-			plugins: [reservationsPlugin(), reservationsNativePoc()],
+			plugins: [reservationsPlugin()],
 		}),
 	],
 	devToolbar: { enabled: false },

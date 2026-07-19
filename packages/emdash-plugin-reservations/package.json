@@ -1,19 +1,13 @@
 {
 	"name": "@emdash-reservations/plugin-reservations",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"private": true,
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
 		"./runtime": "./src/runtime.ts",
 		"./admin": "./src/admin/index.tsx",
-		"./components": "./src/components/index.ts",
-		"./poc": "./src/poc/index.ts",
-		"./poc-runtime": "./src/poc/runtime.ts",
-		"./poc-admin": "./src/poc/admin.tsx"
-	},
-	"dependencies": {
-		"@emdash-cms/blocks": "0.28.1"
+		"./components": "./src/components/index.ts"
 	},
 	"peerDependencies": {
 		"astro": "^7.0.0",

@@ -199,9 +199,6 @@ export const AdminUpsertReservationDto = z.object({
     "./admin": "./src/admin/index.tsx",    // nové
     "./components": "./src/components/index.ts"
   },
-  "dependencies": {
-    "@emdash-cms/blocks": "0.28.1"          // zůstává — portableTextBlocks/fieldWidgets sem případně v budoucnu; admin už Block Kit nepoužívá, ale field-widget cesta ho může chtít později
-  },
   "peerDependencies": {
     "astro": "^7.0.0",
     "emdash": "^0.28.1",
@@ -215,6 +212,8 @@ export const AdminUpsertReservationDto = z.object({
 **`@cloudflare/kumo` jako peerDependency, přesně pinned (ne `^2.6.0`).** Kumo je interní design systém hostitelského admin UI, ne stabilní veřejné API — stejné zdůvodnění jako u úzkého `emdash` peer rozsahu (NPM_SPEC §5): plugin vykresluje Kumo komponenty *do stejného React stromu* jako hostitel, takže musí použít přesně tu verzi, kterou hostitel dodává (jinak riziko duplicitních React kontextů / vizuálních nekonzistencí při vydání nové major verze Kumo s breaking změnami tříd/props). Rozšíření rozsahu = re-verifikace, stejně jako u emdash peer.
 
 `@types/react`, `@types/react-dom` do `devDependencies` pro typecheck.
+
+**`@emdash-cms/blocks` odstraněna (NATIVE_PLAN N7).** Byla `dependencies` jen kvůli Block Kit builderům v `server/admin-ui.ts`, smazaném v N3 — od té chvíle nepoužitá. Rozhodnutí "nechat pro případné budoucí `fieldWidgets`/`portableTextBlocks`" zvráceno: YAGNI, nic takového se neplánuje; přidat zpátky je triviální, kdyby to jednou bylo potřeba.
 
 ## 8. Mimo rozsah
 

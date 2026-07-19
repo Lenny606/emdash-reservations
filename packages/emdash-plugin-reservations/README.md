@@ -1,11 +1,15 @@
 # @emdash-reservations/plugin-reservations
 
-A standard-format EmDash plugin that adds a weekly reservation calendar (7 days × 30-minute
-slots) to the site, with a Block Kit admin page to configure it and manage bookings.
+A native-format EmDash plugin that adds a weekly reservation calendar (7 days × 30-minute
+slots) to the site, with a React admin app (list, detail, edit, manual creation, settings) to
+configure it and manage bookings.
 
-See [SPEC.md](./SPEC.md) for the full design and [PLAN.md](./PLAN.md) for the implementation
-log (including emdash-version-specific findings from Phase 0). [NPM_PLAN.md](./NPM_PLAN.md)
-covers turning this into a standalone published package.
+See [SPEC.md](./SPEC.md) for the original design and [PLAN.md](./PLAN.md) for the phase 1-7
+implementation log. The admin was later rewritten from Block Kit to native React —
+[NATIVE_SPEC.md](./NATIVE_SPEC.md) and [NATIVE_PLAN.md](./NATIVE_PLAN.md) are the current
+source of truth for the admin; [ADMIN_SPEC.md](./ADMIN_SPEC.md)/[ADMIN_PLAN.md](./ADMIN_PLAN.md)
+are superseded (kept as historical record). [NPM_PLAN.md](./NPM_PLAN.md) covers turning this
+into a standalone published package.
 
 ## Install (this workspace)
 
@@ -15,12 +19,22 @@ Already wired up:
 - `astro.config.mjs` registers it: `plugins: [reservationsPlugin()]`.
 - `src/pages/reservations.astro` renders the `<ReservationCalendar />` component.
 
-## Settings (admin UI)
+## Admin UI
 
-Visit `/_emdash/admin/plugins/reservations/reservations` (or the "Reservations" item in the
-admin nav). The page has a settings form at the top, an overview, a list of pending
-reservations with Confirm/Cancel actions, and a read-only table of the 50 most recent
-reservations.
+Visit `/_emdash/admin/plugins/reservations/reservations` (or the "Reservations" item under
+"Plugins" in the admin sidebar). Three views:
+
+- **Reservations** — filterable list (status, date range, email, a "show cancelled" toggle
+  that switches to the history collection), with stat cards (this week / pending / confirmed /
+  cancelled) above it. Click a row for the full detail: contact info, meta (IP hash, user
+  agent — empty for manually-created reservations), and status-dependent actions (Confirm,
+  Edit, Cancel, Delete — see ADMIN_SPEC.md §4 for the exact matrix).
+- **New reservation** — manually create a booking. Bypasses the public security pipeline
+  (CSRF/captcha/honeypot/rate-limit) and the `maxDaysAhead`/`enabled` gates — opening hours and
+  active days still apply. Sends the customer (not the admin) a confirmation email if **Email
+  notifications** is on.
+- **Settings** — the form below, including a live color picker (native `<input type="color">`
+  synced with a hex text field) for the four calendar colors.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
@@ -42,7 +56,10 @@ Base: `/_emdash/api/plugins/reservations/<route>`
 | `public/availability` | GET | public | Slot statuses for a week (`?weekStart=YYYY-MM-DD`, must be a Monday). No PII. |
 | `public/csrf` | GET | public | Issues a short-lived signed CSRF token. |
 | `public/reserve` | POST | public | Creates a reservation (full security pipeline below). |
-| `admin` | POST | admin session | Block Kit page: settings, overview, pending actions, recent table. |
+| `admin/settings-get`, `admin/settings-save` | POST | admin session | Read/write plugin settings. |
+| `admin/overview` | POST | admin session | Stat card counts. |
+| `admin/reservations-list` | POST | admin session | Filtered, cursor-paginated list (active or history). |
+| `admin/reservation-detail`, `-confirm`, `-cancel`, `-delete`, `-create`, `-update` | POST | admin session | Per-reservation actions. All return a normal `200` with `{ ok, ... }` even on business-logic failure (not found, slot taken) -- see NATIVE_SPEC.md N0-11 for why these never throw. |
 
 ## Security model
 
@@ -87,6 +104,7 @@ No email transport ships with this plugin. `server/notifications.ts` calls `ctx.
 - No multi-slot / multi-resource bookings, no recurring reservations.
 - No self-service cancellation by visitors (would need email + token, i.e. after an email
   transport exists).
-- The admin table is a fixed recent-50 snapshot -- no live status filter or cursor
-  pagination (the installed Block Kit's `table` block has no per-row action buttons, so
-  actionable rows are rendered as separate section+button blocks instead; see PLAN.md Phase 5).
+- List pagination is forward-only cursor-based ("Next" button, no page numbers or going back
+  to a specific page) -- the underlying storage API doesn't support backward pagination.
+- No cancellation reason field, no audit trail of which admin made a change (route context
+  doesn't carry admin identity in this emdash version).

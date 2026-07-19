@@ -1,5 +1,7 @@
 # Implementační plán: Přechod na native formát + plný admin (React)
 
+**✅ Dokončeno (2026-07-19) — fáze N0–N7 hotové.** Plugin běží ve `format: "native"`, admin je plně funkční React aplikace (Kumo): nastavení s live color pickerem, filtrovatelný seznam, detail s akcemi dle stavové matice, editace s re-key, ruční vytváření, storno s notifikací zákazníkovi. End-to-end scénář ověřen, žádné PII neuniká do veřejných rout, POC úklizen, dokumentace aktualizována.
+
 Realizuje [NATIVE_SPEC.md](./NATIVE_SPEC.md). Nahrazuje [ADMIN_PLAN.md](./ADMIN_PLAN.md) (Block Kit admin se nedokončuje). Fáze řazené tak, aby po každé byl web funkční a testovatelný — veřejná strana (`/reservations`, `public/*` routy) musí zůstat funkční po celou dobu, mění se jen v obálce (routa signatura), nikdy v logice.
 
 ## Fáze N0 — Živé ověření předpokladů (před přepisem čehokoliv) ✅ (2026-07-18)
@@ -75,13 +77,14 @@ Tahle fáze doručuje původní zadání práce (živý náhled barvy) jako prvn
 - [x] Storno tlačítko v `DetailView` s `ConfirmButton` — hotovo v N4.
 - [x] **Ověření:** storno pending i confirmed rezervace přes `curl` — slot se v kalendáři okamžitě uvolní (ověřeno `public/availability`, oba sloty zpět `free`), záznam v historii pod novým ULID; log obsahuje skutečný pokus o notifikaci (`notifyEnabled:false` → "skipping customer email"; `notifyEnabled:true` → emdash dev-mode e-mail stub `📧 [dev-email] Email sent` vypíše kompletní vyrenderovaný e-mail se správným předmětem/textem); opakované storno stejného id ⇒ `{ok:false, code:"not_found"}` (v UI se zobrazí jako banner přes `DetailView`'s `onError`). Vitest 6/6 passed, typecheck čistý, testovací data uklizena.
 
-## Fáze N7 — Průchod celku a úklid dokumentace
+## Fáze N7 — Průchod celku a úklid dokumentace ✅ (2026-07-19)
 
-- [ ] End-to-end scénář: veřejná rezervace → detail v adminu → potvrzení → přesun slotu (edit) → storno → smazání z historie; kontrola kalendáře na webu po každém kroku.
-- [ ] Kontrola, že žádná admin data (PII, meta) neprosakují do veřejných rout (`public/availability` response) — beze změny oproti dnešku, jen re-verify po refactoru.
-- [ ] `ADMIN_PLAN.md` a `ADMIN_SPEC.md`: přidat hlavičkovou poznámku "Nahrazeno NATIVE_SPEC.md/NATIVE_PLAN.md — Block Kit admin se nedokončil, přepsáno na native React." (soubory zůstávají jako historický záznam rozhodnutí, nemažou se).
-- [ ] `PLAN.md` fáze 5 (Block Kit admin): podobná poznámka o nahrazení.
-- [ ] `NPM_SPEC.md`: aktualizovat zmínky `format: "standard"` → `"native"`; §1 tabulka (distribuční model) — ověřit, že "Trusted, in-process" zdůvodnění platí beze změny (mělo by, native to jen formalizuje, NATIVE_SPEC §1); §4 kontrakt `package.json` přepsat na nový tvar exports/peerDependencies z NATIVE_SPEC §7.
-- [ ] `README.md` (pokud existuje uživatelská dokumentace admin sekce) — aktualizovat popis admin UI (React stránka místo Block Kit formuláře).
-- [ ] Smazat mrtvý kód: cokoliv v `server/admin-ui.ts` pozůstatky, nepoužívané Block Kit importy (`@emdash-cms/blocks` zůstává jako dependency jen pokud se plánuje `fieldWidgets`/`portableTextBlocks` v budoucnu — jinak zvážit odstranění, viz NATIVE_SPEC §7 poznámka).
-- [ ] Smazat `src/poc/` (native POC, N0) a jeho registraci v `astro.config.mjs` (`reservationsNativePoc()`), a `package.json` exports `./poc`, `./poc-runtime`, `./poc-admin` — sloužil jen k živému ověření N0 předpokladů, teď nahrazeno hlavním pluginem.
+- [x] End-to-end scénář (Playwright + curl): veřejná rezervace na `/reservations` → detail v adminu (PII/meta viditelné jen tam) → potvrzení (pending→confirmed) → přesun slotu (edit, re-key) → storno (dialog, přesun do historie, notifikace pokus) → smazání z historie (dialog). Kalendář zkontrolován po každém kroku přes `public/availability` — slot se uvolňoval/obsazoval přesně podle akce. 0 console chyb, 0 server chyb (mimo neškodnou pre-existing `/404` na faviconu).
+- [x] Kontrola, že admin data neprosakují do `public/availability` — ověřeno živě: odpověď obsahuje jen `slotKey/date/startTime/status`, žádné jméno/e-mail/IP hash/user agent (i pro potvrzenou rezervaci s reálnými PII v adminu).
+- [x] `ADMIN_PLAN.md` a `ADMIN_SPEC.md`: hlavičková poznámka o nahrazení NATIVE_SPEC.md/NATIVE_PLAN.md přidána, soubory zůstávají jako historický záznam.
+- [x] `PLAN.md` fáze 5: poznámka o nahrazení přidána.
+- [x] `NPM_SPEC.md`: `format: "standard"` → `"native"` zmínky opraveny (§1 tabulka teď říká, že trusted/in-process je od N1 technicky vynucené, ne jen doporučené; §5 popisuje aktuální interní API tvar — pojmenovaný `createPlugin`, jednoargumentové routy, `admin.entry`/`admin.pages` uvnitř `definePlugin()`); §3 doplněn o nový, zatím nerozhodnutý řádek pro `src/admin/**` distribuci; §4 kontrakt `package.json` přepsán na `./runtime`/`./admin` exports + `react`/`react-dom`/`@cloudflare/kumo` peery.
+- [x] `README.md`: sekce "Admin UI" přepsána (tři views — Reservations/New reservation/Settings, live color picker), routy tabulka doplněna o všech 9 `admin/*` rout, known limitations aktualizovány (cursor-only pagination, žádný audit trail — Block Kit `table` limitace zmizela s přechodem na native).
+- [x] Smazán mrtvý kód: `@emdash-cms/blocks` odstraněna z `dependencies` (nepoužívaná od smazání `admin-ui.ts` v N3) — YAGNI, `fieldWidgets`/`portableTextBlocks` se neplánují.
+- [x] Smazán `src/poc/` (native POC, N0), jeho registrace v `astro.config.mjs`, a `package.json` exports `./poc`/`./poc-runtime`/`./poc-admin`. Ověřeno: `hasAdminPages: true` pro jediný zbývající plugin, sidebar bez pozůstatků, typecheck čistý, cold restart čistý.
+- [x] Bonus úklid: `package.json` verze bumpnuta na `0.2.0` (sladěno s descriptor/`definePlugin()` verzí, NT-4).
