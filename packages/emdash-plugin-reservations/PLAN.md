@@ -66,6 +66,8 @@ SPEC.md §1, §3, §4, §6, §8 aktualizovány dle těchto zjištění.
 
 ## Fáze 5 — Administrace
 
+> **Nahrazeno [NATIVE_SPEC.md](./NATIVE_SPEC.md)/[NATIVE_PLAN.md](./NATIVE_PLAN.md).** Tahle fáze dodala Block Kit admin (settings formulář, přehled, read-only tabulka, pending seznam s Confirm/Cancel); plugin od NATIVE_PLAN N1 běží ve `format: "native"` a admin je React (Kumo) — `server/admin-ui.ts` z bodu níže smazán v NATIVE_PLAN N3. Zápisy níže zůstávají jako historický záznam.
+
 - [x] Nastavení: **ne** `admin.settingsSchema`, viz Fáze 0 — místo toho `buildSettingsFormBlocks(settings)` v `admin-ui.ts` (Block Kit `form` blok) + `form_submit` handler v `admin` routě, který zapisuje do KV `settings:*`.
 - [x] `src/server/admin-ui.ts` — Block Kit buildery: `buildSettingsFormBlocks`, `buildOverviewBlocks(stats)`, `buildPendingListBlocks(items)`, `buildReservationsTableBlocks(items)`. **Odchylka od SPEC §6:** instalovaný `table` blok nemá per-row akční tlačítka (jen `columns`/`rows`, žádný action/button column format) — proto je tabulka jen pro čtení (posledních 50 rezervací, bez filtru/stránkování) a akceschopné `pending` položky se renderují zvlášť jako dvojice `section` (text) + `actions` (Confirm/Cancel tlačítka) na řádek.
 - [x] Routa `admin` — interakce: `page_load` i cokoliv neznámého → plná stránka; `form_submit` `save_settings` → zápis do KV; `block_action` `confirm` (`pending → confirmed`, update v `reservations`); `block_action` `cancel` (potvrzovací dialog už řeší `ButtonElement.confirm` na klientu; handler přesune záznam do `reservations_history` s `ulid()` id a smaže z `reservations`); toast zprávy u všech tří.

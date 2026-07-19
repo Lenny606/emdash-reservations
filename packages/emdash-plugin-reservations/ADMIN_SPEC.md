@@ -1,5 +1,7 @@
 # Specifikace: Správa rezervací v administraci
 
+> **Nahrazeno [NATIVE_SPEC.md](./NATIVE_SPEC.md)/[NATIVE_PLAN.md](./NATIVE_PLAN.md).** Block Kit admin se nedokončil — plugin přešel na `format: "native"` a admin je přepsaný na React (Kumo). Tento dokument zůstává jako historický záznam rozhodnutí (rozsah funkcí — seznam, detail, editace, mazání, ruční vytváření, storno s notifikací — NATIVE_SPEC/NATIVE_PLAN přebírají beze změny, jen jinou implementační vrstvou).
+
 Specifikace admin modulu pro správu rezervací. Nahrazuje minimální admin stránku ze [SPEC.md](./SPEC.md) §6 a **rozšiřuje její už implementovanou základní verzi** (PLAN.md fáze 5: settings formulář, přehled, read-only tabulka, pending seznam s Confirm/Cancel) o plnohodnotnou sekci: seznam s filtry, detail každé rezervace, editaci, mazání, ruční vytváření a storno s automatickou notifikací. Implementační kroky řeší [ADMIN_PLAN.md](./ADMIN_PLAN.md).
 
 Platí zjištění z PLAN.md fází 0 a 5:

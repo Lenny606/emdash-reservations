@@ -1,5 +1,7 @@
 # Implementační plán: Správa rezervací v administraci
 
+> **Nahrazeno [NATIVE_SPEC.md](./NATIVE_SPEC.md)/[NATIVE_PLAN.md](./NATIVE_PLAN.md).** Block Kit admin se nedokončil — přepsáno na native React. Tento dokument zůstává jako historický záznam (žádné fáze níže nebyly dokončeny v Block Kit podobě, jen v podobě popsané v NATIVE_PLAN.md).
+
 Realizuje [ADMIN_SPEC.md](./ADMIN_SPEC.md). **Navazuje na dokončenou fázi 5 z [PLAN.md](./PLAN.md)** — základní admin (settings formulář, přehled, read-only tabulka, pending seznam s Confirm/Cancel) existuje a tento plán ho refaktoruje a rozšiřuje. Předpoklad: PLAN.md fáze 1–7 v aktuálním stavu (hotové až na interaktivní ověření uživatelem).
 
 ## Fáze A0 — Ověření zbývajících Block Kit možností
